@@ -1,7 +1,7 @@
 import { useState } from "react";
-import authService from "../../service/authService";
 import { useNavigate } from "react-router-dom";
-import useAuth from "../../hooks/useAuth";
+import authService from "../services/authService";
+import useAuth from "../hooks/useAuth";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({

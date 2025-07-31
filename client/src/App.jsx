@@ -1,11 +1,11 @@
-import LoginPage from "./components/auth/LoginPage";
-import RegisterPage from "./components/auth/RegisterPage";
-import HomePage from "./components/pages/HomePage";
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
-import ProtectedRoutes from "./components/ProtectedRoutes";
+import LoginPage from "./features/auth/pages/LoginPage";
+import HomePage from "./components/pages/HomePage";
+import RegisterPage from "./features/auth/pages/RegisterPage";
+import ProtectedRoutes from "./features/auth/routes/ProtectedRoutes";
 import Dashboard from "./components/pages/Dashboard";
-import AuthProvider from "./context/AuthProvider";
-import ChatPage from "./components/ChatPage";
+import ChatPage from "./features/chat/pages/ChatPage";
+import AuthProvider from "./features/auth/context/AuthProvider";
 
 function App() {
   return (
