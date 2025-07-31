@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import authService from "../services/authService";
 import useAuth from "../hooks/useAuth";
 
@@ -9,7 +9,10 @@ const LoginPage = () => {
     password: "",
   });
   const navigate = useNavigate();
+  const location = useLocation();
   const auth = useAuth();
+
+  const from = location.state?.from?.pathname || "/dashboard";
 
   const { email, password } = formData;
 
@@ -21,7 +24,7 @@ const LoginPage = () => {
     try {
       const data = await authService.login(formData);
       auth.login(data);
-      navigate("/dashboard");
+      navigate(from, { replace: true });
       // console.log("Login successful:", data);
     } catch (error) {
       console.log("Login failed:", error);

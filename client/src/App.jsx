@@ -6,25 +6,28 @@ import ProtectedRoutes from "./features/auth/routes/ProtectedRoutes";
 import Dashboard from "./components/pages/Dashboard";
 import ChatPage from "./features/chat/pages/ChatPage";
 import AuthProvider from "./features/auth/context/AuthProvider";
+import PublicRoutes from "./features/auth/routes/PublicRoutes";
 
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <div>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<HomePage />} />
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<HomePage />} />
+
+          {/* Public Routes but not authenticated */}
+          <Route element={<PublicRoutes />}>
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/login" element={<LoginPage />} />
+          </Route>
 
-            {/* Protected Routes */}
-            <Route element={<ProtectedRoutes />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/chat" element={<ChatPage />} />
-            </Route>
-          </Routes>
-        </div>
+          {/* Protected Routes needs authentication */}
+          <Route element={<ProtectedRoutes />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/chat" element={<ChatPage />} />
+          </Route>
+        </Routes>
       </Router>
     </AuthProvider>
   );

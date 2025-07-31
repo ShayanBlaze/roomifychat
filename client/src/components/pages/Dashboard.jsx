@@ -1,8 +1,7 @@
-import React, { useContext } from "react";
-import { AuthContext } from "../../features/auth/context/AuthContext";
+import useAuth from "../../features/auth/hooks/useAuth";
 
 const Dashboard = () => {
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout } = useAuth();
 
   if (!user) {
     return <div>Please log in to access the dashboard.</div>;

@@ -31,9 +31,10 @@ const AuthProvider = ({ children }) => {
   }, []);
 
   const login = (data) => {
-    const token = localStorage.setItem("token", data.token);
-    setAuthToken(token);
-    setToken(token);
+    const userToken = data.token;
+    localStorage.setItem("token", userToken);
+    setAuthToken(userToken);
+    setToken(userToken);
     setIsAuthenticated(true);
     setUser(data.user);
     setLoading(false);
