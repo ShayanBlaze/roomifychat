@@ -13,6 +13,8 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/auth");
 const authMiddleware = require("./middleware/authMiddleware");
 const { getDashboardData } = require("./controllers/dashboardController");
+const Message = require("./models/Message");
+const messageRoutes = require("./routes/messageRoutes");
 
 const io = new Server(server, {
   cors: {
@@ -30,6 +32,7 @@ app.get("/api/v1", (req, res) => {
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/dashboard", authMiddleware, getDashboardData);
+app.use("/api/v1/messages", messageRoutes);
 
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
@@ -42,6 +45,19 @@ io.on("connection", (socket) => {
     console.log(`Message from ${socket.id}: ${msg}`);
 
     socket.broadcast.emit("testMessage", msg);
+  });
+
+  socket.on("chatMessage", async (data) => {
+    const message = new Message({
+      content: data.content,
+      sender: data.senderId,
+      chat: "general",
+    });
+
+    const savedMessage = await message.save();
+    const populatedMessage = await savedMessage.populate("sender", "name");
+
+    io.emit("chatMessage", populatedMessage);
   });
 });
 
