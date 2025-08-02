@@ -36,6 +36,37 @@ const ChatPage = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef(null);
+  const [typingUsers, setTypingUsers] = useState([]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    // listening on user typing
+    socket.on("userTyping", (data) => {
+      // include user in typingUsers if not already present
+      setTypingUsers((prevUsers) =>
+        prevUsers.includes(data.sender)
+          ? prevUsers
+          : [...prevUsers, data.sender]
+      );
+    });
+
+    // listening on user stopped typing
+    socket.on("userStoppedTyping", (data) => {
+      // remove user from typingUsers
+      setTypingUsers((prevUsers) =>
+        prevUsers.filter((user) => user !== data.sender)
+      );
+    });
+
+    // cleanup listeners on component unmount
+    return () => {
+      socket.off("userTyping");
+      socket.off("userStoppedTyping");
+    };
+  }, [socket]);
 
   useEffect(() => {
     // socket connect
@@ -119,6 +150,29 @@ const ChatPage = () => {
     }
   };
 
+  const handleTyping = (e) => {
+    setNewMessage(e.target.value);
+
+    // include user in typingUsers if not already present
+    if (socket && !isTyping) {
+      socket.emit("typing", { sender: user.name });
+      setIsTyping(true);
+    }
+
+    // reset typing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // set a new timeout. If the user stops typing for 2 seconds, emit 'stopTyping' event
+    typingTimeoutRef.current = setTimeout(() => {
+      if (socket) {
+        socket.emit("stopTyping", { sender: user.name });
+        setIsTyping(false);
+      }
+    }, 2000);
+  };
+
   return (
     <div className="flex h-[90vh] flex-col overflow-hidden rounded-lg border border-gray-200 bg-gray-50 shadow-lg sm:mx-auto sm:my-8 sm:max-w-2xl md:max-w-3xl">
       {/* Header */}
@@ -126,6 +180,14 @@ const ChatPage = () => {
         <h1 className="text-xl font-semibold text-gray-800">
           General Chat Room
         </h1>
+        <div className="text-black">
+          {typingUsers.length > 0 && (
+            <p>
+              {typingUsers.join(", ")}
+              {typingUsers.length === 1 ? " is typing..." : " are typing..."}
+            </p>
+          )}
+        </div>
       </header>
 
       {/* Messages Area */}
@@ -199,7 +261,7 @@ const ChatPage = () => {
           <input
             type="text"
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={handleTyping}
             placeholder="Type a message..."
             className="flex-1 rounded-full border border-gray-300 px-4 py-2 text-sm text-gray-800 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             autoComplete="off"

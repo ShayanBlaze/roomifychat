@@ -63,6 +63,16 @@ io.on("connection", (socket) => {
       console.error("Error saving or broadcasting message:", error);
     }
   });
+
+  socket.on("typing", (data) => {
+    // این ایونت رو برای همه به جز خود فرستنده ارسال می‌کنه
+    socket.broadcast.emit("userTyping", data);
+  });
+
+  socket.on("stopTyping", (data) => {
+    // این ایونت رو هم برای همه به جز خود فرستنده ارسال می‌کنه
+    socket.broadcast.emit("userStoppedTyping", data);
+  });
 });
 
 const PORT = process.env.PORT || 3000;
