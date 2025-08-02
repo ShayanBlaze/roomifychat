@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../../auth/hooks/useAuth";
 import { io } from "socket.io-client";
 import axios from "axios";
+
+// --- Icons ---
 
 const SendIcon = () => (
   <svg
@@ -19,7 +22,7 @@ const AttachmentIcon = () => (
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
     fill="currentColor"
-    className="h-6 w-6 text-gray-500 hover:text-blue-600 cursor-pointer"
+    className="h-6 w-6"
   >
     <path
       fillRule="evenodd"
@@ -29,8 +32,98 @@ const AttachmentIcon = () => (
   </svg>
 );
 
+const CloseIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+    className="w-8 h-8"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M6 18L18 6M6 6l12 12"
+    />
+  </svg>
+);
+
+// --- Components ---
+
+/**
+ * A placeholder sidebar for future navigation.
+ */
+const Sidebar = () => {
+  const channels = [
+    { id: "1", name: "general", icon: "#" },
+    { id: "2", name: "random", icon: "#" },
+    { id: "3", name: "tech-talk", icon: "T" },
+  ];
+  return (
+    <div className="flex flex-col w-64 bg-gray-900 p-4 space-y-4">
+      <div className="text-2xl font-bold mb-4">ChatApp</div>
+      <nav>
+        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+          Channels
+        </h2>
+        <ul>
+          {channels.map((channel) => (
+            <li key={channel.id}>
+              <a
+                href="#"
+                className="flex items-center space-x-3 text-gray-300 hover:bg-gray-700 p-2 rounded-md transition-colors"
+              >
+                <span className="flex items-center justify-center h-6 w-6 rounded-md bg-gray-700 text-sm">
+                  {channel.icon}
+                </span>
+                <span>{channel.name}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </div>
+  );
+};
+
+/**
+ * A modal to display images in full screen, with animations.
+ */
+const ImageModal = ({ imageUrl, onClose }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+    >
+      <motion.button
+        initial={{ opacity: 0, scale: 0.5 }}
+        animate={{ opacity: 1, scale: 1, transition: { delay: 0.2 } }}
+        exit={{ opacity: 0, scale: 0.5 }}
+        className="absolute top-4 right-4 text-white hover:text-gray-300"
+        onClick={onClose}
+      >
+        <CloseIcon />
+      </motion.button>
+      <motion.img
+        layoutId={`chat-image-${imageUrl}`} // For smooth animation from chat to modal
+        src={imageUrl}
+        alt="Enlarged view"
+        className="max-w-full max-h-full rounded-lg shadow-2xl"
+        onClick={(e) => e.stopPropagation()} // Prevent closing modal when clicking on image
+      />
+    </motion.div>
+  );
+};
+
 let socket;
 
+/**
+ * The main chat page component.
+ */
 const ChatPage = () => {
   const { user, token } = useAuth();
   const [messages, setMessages] = useState([]);
@@ -39,29 +132,23 @@ const ChatPage = () => {
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef(null);
   const [typingUsers, setTypingUsers] = useState([]);
+  const [selectedImage, setSelectedImage] = useState(null); // State for the image modal
 
+  // Logic hooks (useEffect) remain unchanged...
   useEffect(() => {
     if (!socket) return;
-
-    // listening on user typing
     socket.on("userTyping", (data) => {
-      // include user in typingUsers if not already present
       setTypingUsers((prevUsers) =>
         prevUsers.includes(data.sender)
           ? prevUsers
           : [...prevUsers, data.sender]
       );
     });
-
-    // listening on user stopped typing
     socket.on("userStoppedTyping", (data) => {
-      // remove user from typingUsers
       setTypingUsers((prevUsers) =>
         prevUsers.filter((user) => user !== data.sender)
       );
     });
-
-    // cleanup listeners on component unmount
     return () => {
       socket.off("userTyping");
       socket.off("userStoppedTyping");
@@ -69,33 +156,22 @@ const ChatPage = () => {
   }, [socket]);
 
   useEffect(() => {
-    // socket connect
     socket = io("http://localhost:3000/");
-
-    // Fetch previous messages
     const fetchMessages = async () => {
       if (!token) return;
       try {
         const response = await axios.get("/api/v1/messages/general", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (Array.isArray(response.data)) {
-          setMessages(response.data);
-        } else {
-          setMessages([]);
-        }
+        setMessages(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         console.error("Failed to fetch messages:", error);
       }
     };
     fetchMessages();
-
-    // Listen for new messages (both text and image)
     socket.on("newMessage", (message) => {
       setMessages((prevMessages) => [...prevMessages, message]);
     });
-
-    // Cleanup on component unmount
     return () => {
       socket.off("newMessage");
       socket.disconnect();
@@ -106,31 +182,25 @@ const ChatPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Event handlers remain unchanged...
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file || !socket) return;
-
     const formData = new FormData();
     formData.append("image", file);
-
     try {
-      const config = {
+      const { data } = await axios.post("/api/v1/upload", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
         },
-      };
-
-      const { data } = await axios.post("/api/v1/upload", formData, config);
-      const { imageUrl } = data;
-
-      if (imageUrl) {
-        const messageData = {
+      });
+      if (data.imageUrl) {
+        socket.emit("sendMessage", {
           type: "image",
-          content: imageUrl,
+          content: data.imageUrl,
           sender: user,
-        };
-        socket.emit("sendMessage", messageData);
+        });
       }
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -140,31 +210,27 @@ const ChatPage = () => {
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (newMessage.trim() && user && socket) {
-      const messageData = {
+      socket.emit("sendMessage", {
         type: "text",
         content: newMessage,
         sender: user,
-      };
-      socket.emit("sendMessage", messageData);
+      });
       setNewMessage("");
+      if (socket) {
+        socket.emit("stopTyping", { sender: user.name });
+        setIsTyping(false);
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      }
     }
   };
 
   const handleTyping = (e) => {
     setNewMessage(e.target.value);
-
-    // include user in typingUsers if not already present
     if (socket && !isTyping) {
       socket.emit("typing", { sender: user.name });
       setIsTyping(true);
     }
-
-    // reset typing timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-
-    // set a new timeout. If the user stops typing for 2 seconds, emit 'stopTyping' event
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
       if (socket) {
         socket.emit("stopTyping", { sender: user.name });
@@ -174,110 +240,160 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex h-[90vh] flex-col overflow-hidden rounded-lg border border-gray-200 bg-gray-50 shadow-lg sm:mx-auto sm:my-8 sm:max-w-2xl md:max-w-3xl">
-      {/* Header */}
-      <header className="border-b border-gray-200 bg-white p-4">
-        <h1 className="text-xl font-semibold text-gray-800">
-          General Chat Room
-        </h1>
-        <div className="text-black">
-          {typingUsers.length > 0 && (
-            <p>
-              {typingUsers.join(", ")}
-              {typingUsers.length === 1 ? " is typing..." : " are typing..."}
-            </p>
-          )}
+    <div className="flex h-full flex-1 flex-col bg-gray-800 font-sans text-white">
+      {/* Chat Header */}
+      <header className="flex shrink-0 items-center justify-between border-b border-gray-700 bg-gray-800/50 backdrop-blur-sm p-4 shadow-md z-10">
+        <div>
+          <h1 className="text-xl font-bold"># general</h1>
+          <div className="h-4 text-sm text-blue-400">
+            <AnimatePresence>
+              {typingUsers.length > 0 && (
+                <motion.p
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="animate-pulse"
+                >
+                  {typingUsers.join(", ")}
+                  {typingUsers.length === 1
+                    ? " is typing..."
+                    : " are typing..."}
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </header>
 
       {/* Messages Area */}
-      <main className="flex-1 space-y-4 overflow-y-auto p-6">
-        {messages.map((msg) => {
-          const isSentByMe = msg.sender?._id === user?._id;
-          return (
-            <div
-              key={msg._id}
-              className={`flex ${isSentByMe ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-xs rounded-2xl px-4 py-3 shadow md:max-w-md ${
-                  isSentByMe
-                    ? "rounded-br-lg bg-blue-600 text-white"
-                    : "rounded-bl-lg border border-gray-200 bg-white text-gray-800"
+      <main className="flex-1 space-y-6 overflow-y-auto p-6">
+        <AnimatePresence initial={false}>
+          {messages.map((msg) => {
+            const isSentByMe = msg.sender?._id === user?._id;
+            return (
+              <motion.div
+                key={msg._id || Math.random()}
+                layout
+                initial={{ opacity: 0, scale: 0.8, y: 50 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
+                className={`flex items-end gap-3 ${
+                  isSentByMe ? "justify-end" : "justify-start"
                 }`}
               >
-                {/* display sender name if not sent by me */}
                 {!isSentByMe && (
-                  <h3 className="mb-1 text-xs font-bold text-blue-600">
-                    {msg.sender?.name}
-                  </h3>
-                )}
-                {/* check message type */}
-                {msg.type === "image" ? (
                   <img
-                    src={msg.content}
-                    alt="Image message"
-                    className="mt-1 max-w-full rounded-lg h-auto"
-                    style={{ maxHeight: "250px" }}
+                    src={`https://i.pravatar.cc/150?u=${msg.sender?._id}`}
+                    alt={msg.sender?.name}
+                    className="h-8 w-8 rounded-full object-cover"
                   />
-                ) : (
-                  <p className="text-sm">{msg.content}</p>
                 )}
                 <div
-                  className={`mt-1 text-right text-xs ${
-                    isSentByMe ? "text-blue-100" : "text-gray-400"
+                  className={`max-w-xs rounded-2xl p-3 shadow-lg md:max-w-md ${
+                    isSentByMe
+                      ? "rounded-br-none bg-blue-600"
+                      : "rounded-bl-none bg-gray-700"
                   }`}
                 >
-                  {new Date(msg.createdAt).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                  {!isSentByMe && (
+                    <h3 className="mb-1 text-xs font-bold text-blue-400">
+                      {msg.sender?.name || "Anonymous"}
+                    </h3>
+                  )}
+                  {msg.type === "image" ? (
+                    <motion.img
+                      layoutId={`chat-image-${msg.content}`}
+                      src={msg.content}
+                      alt="Image message"
+                      className="mt-1 max-w-full cursor-pointer rounded-lg transition-transform duration-300 hover:scale-105"
+                      style={{ maxHeight: "250px" }}
+                      onClick={() => setSelectedImage(msg.content)}
+                    />
+                  ) : (
+                    <p className="text-sm leading-relaxed">{msg.content}</p>
+                  )}
+                  <div
+                    className={`mt-1 text-right text-xs ${
+                      isSentByMe ? "text-blue-100/70" : "text-gray-400"
+                    }`}
+                  >
+                    {new Date(msg.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
                 </div>
-              </div>
-            </div>
-          );
-        })}
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
         <div ref={messagesEndRef} />
       </main>
 
       {/* Input Form */}
-      <footer className="border-t border-gray-200 bg-white p-4">
+      <footer className="shrink-0 border-t border-gray-700 bg-gray-800 p-4">
         <form
           onSubmit={handleSendMessage}
           className="flex items-center space-x-3"
         >
-          {/* File input for image uploads */}
-          <label htmlFor="file-input">
+          <motion.label
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            htmlFor="file-input"
+            className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
+          >
             <AttachmentIcon />
-          </label>
+          </motion.label>
           <input
             id="file-input"
             type="file"
             accept="image/*"
-            style={{ display: "none" }}
+            className="hidden"
             onChange={handleFileChange}
           />
-          {/* Text input */}
           <input
             type="text"
             value={newMessage}
             onChange={handleTyping}
             placeholder="Type a message..."
-            className="flex-1 rounded-full border border-gray-300 px-4 py-2 text-sm text-gray-800 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="flex-1 rounded-full border-none bg-gray-700 px-5 py-2 text-sm text-white placeholder-gray-400 transition focus:outline-none focus:ring-2 focus:ring-blue-500"
             autoComplete="off"
           />
-          {/* Send button */}
-          <button
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             type="submit"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-md transition duration-200 ease-in-out hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-md transition-transform duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:scale-100 disabled:cursor-not-allowed disabled:bg-gray-600"
             disabled={!newMessage.trim()}
           >
             <SendIcon />
-          </button>
+          </motion.button>
         </form>
       </footer>
+
+      {/* Image Modal */}
+      <AnimatePresence>
+        {selectedImage && (
+          <ImageModal
+            imageUrl={selectedImage}
+            onClose={() => setSelectedImage(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-export default ChatPage;
+/**
+ * The main application layout, combining Sidebar and ChatPage.
+ */
+const App = () => {
+  return (
+    <div className="flex h-screen bg-gray-900 text-white">
+      <Sidebar />
+      <ChatPage />
+    </div>
+  );
+};
+
+export default App;
