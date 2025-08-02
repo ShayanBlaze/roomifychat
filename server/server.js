@@ -15,6 +15,7 @@ const authMiddleware = require("./middleware/authMiddleware");
 const { getDashboardData } = require("./controllers/dashboardController");
 const Message = require("./models/Message");
 const messageRoutes = require("./routes/messageRoutes");
+const uploadRoutes = require("./routes/uploadRoutes");
 
 const io = new Server(server, {
   cors: {
@@ -33,6 +34,7 @@ app.get("/api/v1", (req, res) => {
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/dashboard", authMiddleware, getDashboardData);
 app.use("/api/v1/messages", messageRoutes);
+app.use("/api/v1/upload", uploadRoutes);
 
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
@@ -41,23 +43,25 @@ io.on("connection", (socket) => {
     console.log("User disconnected:", socket.id);
   });
 
-  socket.on("testMessage", (msg) => {
-    console.log(`Message from ${socket.id}: ${msg}`);
+  socket.on("sendMessage", async (data) => {
+    try {
+      const message = new Message({
+        content: data.content,
+        type: data.type,
+        sender: data.sender._id,
+        chat: "general",
+      });
 
-    socket.broadcast.emit("testMessage", msg);
-  });
+      const savedMessage = await message.save();
+      const populatedMessage = await savedMessage.populate(
+        "sender",
+        "name _id"
+      );
 
-  socket.on("chatMessage", async (data) => {
-    const message = new Message({
-      content: data.content,
-      sender: data.senderId,
-      chat: "general",
-    });
-
-    const savedMessage = await message.save();
-    const populatedMessage = await savedMessage.populate("sender", "name");
-
-    io.emit("chatMessage", populatedMessage);
+      io.emit("newMessage", populatedMessage);
+    } catch (error) {
+      console.error("Error saving or broadcasting message:", error);
+    }
   });
 });
 

@@ -14,7 +14,22 @@ const SendIcon = () => (
   </svg>
 );
 
-const socket = io("http://localhost:3000/");
+const AttachmentIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className="h-6 w-6 text-gray-500 hover:text-blue-600 cursor-pointer"
+  >
+    <path
+      fillRule="evenodd"
+      d="M18.97 3.659a2.25 2.25 0 00-3.182 0l-10.5 10.5a.75.75 0 001.06 1.06l10.5-10.5a.75.75 0 011.06 0l1.5 1.5a.75.75 0 010 1.06l-6.75 6.75a2.25 2.25 0 01-3.182 0l-5.25-5.25a.75.75 0 00-1.06 1.06l5.25 5.25a3.75 3.75 0 005.304 0l6.75-6.75a2.25 2.25 0 000-3.182l-1.5-1.5z"
+      clipRule="evenodd"
+    />
+  </svg>
+);
+
+let socket;
 
 const ChatPage = () => {
   const { user, token } = useAuth();
@@ -22,15 +37,11 @@ const ChatPage = () => {
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    // socket connect
+    socket = io("http://localhost:3000/");
 
-  useEffect(() => {
+    // Fetch previous messages
     const fetchMessages = async () => {
       if (!token) return;
       try {
@@ -48,22 +59,62 @@ const ChatPage = () => {
     };
     fetchMessages();
 
-    socket.on("chatMessage", (message) => {
+    // Listen for new messages (both text and image)
+    socket.on("newMessage", (message) => {
       setMessages((prevMessages) => [...prevMessages, message]);
     });
 
+    // Cleanup on component unmount
     return () => {
-      socket.off("chatMessage");
+      socket.off("newMessage");
+      socket.disconnect();
     };
   }, [token]);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !socket) return;
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const config = {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const { data } = await axios.post("/api/v1/upload", formData, config);
+      const { imageUrl } = data;
+
+      if (imageUrl) {
+        const messageData = {
+          type: "image",
+          content: imageUrl,
+          sender: user,
+        };
+        socket.emit("sendMessage", messageData);
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+    }
+  };
+
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (newMessage.trim() && user) {
-      socket.emit("chatMessage", {
+    if (newMessage.trim() && user && socket) {
+      const messageData = {
+        type: "text",
         content: newMessage,
-        senderId: user._id,
-      });
+        sender: user,
+      };
+      socket.emit("sendMessage", messageData);
       setNewMessage("");
     }
   };
@@ -93,12 +144,23 @@ const ChatPage = () => {
                     : "rounded-bl-lg border border-gray-200 bg-white text-gray-800"
                 }`}
               >
+                {/* display sender name if not sent by me */}
                 {!isSentByMe && (
                   <h3 className="mb-1 text-xs font-bold text-blue-600">
                     {msg.sender?.name}
                   </h3>
                 )}
-                <p className="text-sm">{msg.content}</p>
+                {/* check message type */}
+                {msg.type === "image" ? (
+                  <img
+                    src={msg.content}
+                    alt="Image message"
+                    className="mt-1 max-w-full rounded-lg h-auto"
+                    style={{ maxHeight: "250px" }}
+                  />
+                ) : (
+                  <p className="text-sm">{msg.content}</p>
+                )}
                 <div
                   className={`mt-1 text-right text-xs ${
                     isSentByMe ? "text-blue-100" : "text-gray-400"
@@ -122,6 +184,18 @@ const ChatPage = () => {
           onSubmit={handleSendMessage}
           className="flex items-center space-x-3"
         >
+          {/* File input for image uploads */}
+          <label htmlFor="file-input">
+            <AttachmentIcon />
+          </label>
+          <input
+            id="file-input"
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={handleFileChange}
+          />
+          {/* Text input */}
           <input
             type="text"
             value={newMessage}
@@ -130,6 +204,7 @@ const ChatPage = () => {
             className="flex-1 rounded-full border border-gray-300 px-4 py-2 text-sm text-gray-800 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             autoComplete="off"
           />
+          {/* Send button */}
           <button
             type="submit"
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-md transition duration-200 ease-in-out hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
