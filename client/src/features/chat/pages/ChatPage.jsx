@@ -195,8 +195,34 @@ const ChatPage = () => {
   }, [token, user]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+
+      const unreadMessages = messages.filter(
+        (msg) => msg.status !== "read" && msg.sender._id !== user._id
+      );
+      if (unreadMessages.length > 0) {
+        socket.emit("messageSeen", {
+          messageId: unreadMessages[0]._id,
+          readerId: user._id,
+        });
+      }
+    }
   }, [messages]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("messageStatusUpdate", (updatedMsg) => {
+      setMessages((prevMsgs) =>
+        prevMsgs.map((msg) => (msg._id === updatedMsg._id ? updatedMsg : msg))
+      );
+    });
+
+    return () => {
+      socket.off("messageStatusUpdate");
+    };
+  }, [socket]);
 
   // Event handlers remain unchanged...
   const handleFileChange = async (e) => {
@@ -237,7 +263,6 @@ const ChatPage = () => {
     e.preventDefault();
     if (newMessage.trim() && user && socket) {
       const tempId = Date.now().toString();
-
       const tempMessage = {
         _id: tempId,
         content: newMessage,
@@ -249,17 +274,12 @@ const ChatPage = () => {
 
       setMessages((prev) => [...prev, tempMessage]);
 
-      socket.emit("sendMessage", {
-        ...tempMessage, 
-        tempId: tempId,
-      });
+      socket.emit("sendMessage", { ...tempMessage, tempId });
 
       setNewMessage("");
-      if (socket) {
-        socket.emit("stopTyping", { sender: user.name });
-        setIsTyping(false);
-        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      }
+      socket.emit("stopTyping", { sender: user.name });
+      setIsTyping(false);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     }
   };
 
@@ -356,7 +376,15 @@ const ChatPage = () => {
                       onClick={() => setSelectedImage(msg.content)}
                     />
                   ) : (
-                    <p className="text-white break-words">{msg.content}</p>
+                    <>
+                      <p className="text-white break-words">{msg.content}</p>
+                      {isSentByMe && (
+                        <div className="text-right text-xs mt-1 text-gray-300">
+                          {msg.status === "sent" && <span>✓</span>}
+                          {msg.status === "read" && <span>✓✓</span>}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -366,12 +394,6 @@ const ChatPage = () => {
                     alt={user?.name}
                     className="h-8 w-8 rounded-full object-cover"
                   />
-                )}
-                {isSentByMe && (
-                  <div className="text-right text-xs mt-1 text-gray-300">
-                    {msg.status === "sent" && <span>✓</span>}
-                    {msg.status === "delivered" && <span>✓✓</span>}
-                  </div>
                 )}
               </motion.div>
             );

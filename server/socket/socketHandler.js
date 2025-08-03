@@ -42,6 +42,25 @@ const initializeSocket = (io) => {
     socket.on("stopTyping", (data) => {
       socket.broadcast.emit("userStoppedTyping", data);
     });
+
+    socket.on("messageSeen", async ({ messageId, readerId }) => {
+      try {
+        const updatedMessage = await Message.findByIdAndUpdate(
+          messageId,
+          { status: "read" },
+          { new: true }
+        );
+
+        io.emit("messageStatusUpdate", updatedMessage);
+
+        io.to(updatedMessage.sender.toString()).emit(
+          "messageStatusUpdate",
+          updatedMessage
+        );
+      } catch (err) {
+        console.error("Error updating message status:", err);
+      }
+    });
   });
 };
 
