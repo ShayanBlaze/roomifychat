@@ -2,71 +2,102 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { StatusCodes } = require("http-status-codes");
-const { BadRequestError, UnauthenticatedError } = require("../errors");
 
 const registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
-  let user = await User.findOne({ email });
+  try {
+    const { name, email, password } = req.body;
+    let user = await User.findOne({ email });
 
-  if (user) {
-    throw new BadRequestError("User already exists");
-  }
+    if (user) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "User already exists" });
+    }
 
-  user = new User({
-    name,
-    email,
-    password,
-  });
+    user = new User({ name, email, password });
 
-  const salt = await bcrypt.genSalt(10);
-  user.password = await bcrypt.hash(password, salt);
-  await user.save();
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+    await user.save();
 
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-    expiresIn: "1h",
-  });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
 
-  res
-    .status(StatusCodes.CREATED)
-    .json({
+    res.status(StatusCodes.CREATED).json({
       success: true,
       token,
-      user: { id: user._id, email: user.email, name: user.name },
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        avatar: user.avatar,
+        bio: user.bio,
+      },
     });
+  } catch (error) {
+    console.error("Register Error:", error);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: "Server error during registration." });
+  }
 };
 
 const loginUser = async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ email });
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
 
-  if (!user) {
-    throw new UnauthenticatedError("Invalid credentials");
+    if (!user) {
+      return res
+        .status(StatusCodes.UNAUTHORIZED)
+        .json({ message: "Invalid credentials" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res
+        .status(StatusCodes.UNAUTHORIZED)
+        .json({ message: "Invalid credentials" });
+    }
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        avatar: user.avatar,
+        bio: user.bio,
+      },
+    });
+  } catch (error) {
+    console.error("Login Error:", error);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: "Server error during login." });
   }
-
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    throw new UnauthenticatedError("Invalid credentials");
-  }
-
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-    expiresIn: "1h",
-  });
-
-  res.status(StatusCodes.OK).json({
-    success: true,
-    token,
-    user: { id: user._id, email: user.email, name: user.name },
-  });
 };
 
 const getLoggedInUser = async (req, res) => {
-  const user = await User.findById(req.user.id).select("-password");
-
-  if (!user) {
-    throw new UnauthenticatedError("User not found");
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) {
+      return res
+        .status(StatusCodes.UNAUTHORIZED)
+        .json({ message: "User not found" });
+    }
+    res.status(StatusCodes.OK).json(user);
+  } catch (error) {
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: "Server Error" });
   }
-
-  res.status(StatusCodes.OK).json(user);
 };
 
 module.exports = { registerUser, loginUser, getLoggedInUser };

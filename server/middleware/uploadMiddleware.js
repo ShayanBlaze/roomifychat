@@ -8,15 +8,26 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const storage = new CloudinaryStorage({
+const avatarStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: "RoomifyChat-uploads",
-    allowed_formats: ["jpg", "png", "jpeg", "webp"],
-    transformation: [{ width: 500, height: 500, crop: "limit" }],
+    folder: "roomify_avatars",
+    allowed_formats: ["jpeg", "png", "jpg"],
+    transformation: [
+      { width: 200, height: 200, crop: "fill", gravity: "face" },
+    ],
   },
 });
 
-const upload = multer({ storage: storage });
+const chatImageStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "roomify_chat_images",
+    allowed_formats: ["jpeg", "png", "jpg", "gif"],
+  },
+});
 
-module.exports = upload;
+const uploadAvatar = multer({ storage: avatarStorage });
+const uploadChatImage = multer({ storage: chatImageStorage });
+
+module.exports = { uploadAvatar, uploadChatImage };

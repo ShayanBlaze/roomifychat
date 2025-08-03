@@ -7,6 +7,7 @@ import Dashboard from "./components/pages/Dashboard";
 import ChatPage from "./features/chat/pages/ChatPage";
 import AuthProvider from "./features/auth/context/AuthProvider";
 import PublicRoutes from "./features/auth/routes/PublicRoutes";
+import ProfilePage from "./features/profile/ProfilePage";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route element={<ProtectedRoutes />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/chat" element={<ChatPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
           </Route>
         </Routes>
       </Router>

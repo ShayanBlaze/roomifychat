@@ -187,18 +187,27 @@ const ChatPage = () => {
     const file = e.target.files[0];
     if (!file || !socket) return;
     const formData = new FormData();
-    formData.append("image", file);
+    formData.append("file", file);
+
     try {
-      const { data } = await axios.post("/api/v1/upload", formData, {
+      const token = localStorage.getItem("token");
+      const uploadConfig = {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
         },
-      });
-      if (data.imageUrl) {
+      };
+
+      const { data } = await axios.post(
+        "/api/v1/upload/chat-image",
+        formData,
+        uploadConfig
+      );
+
+      if (data.url) {
         socket.emit("sendMessage", {
           type: "image",
-          content: data.imageUrl,
+          content: data.url,
           sender: user,
         });
       }
@@ -270,6 +279,12 @@ const ChatPage = () => {
         <AnimatePresence initial={false}>
           {messages.map((msg) => {
             const isSentByMe = msg.sender?._id === user?._id;
+
+            const defaultAvatar =
+              "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg";
+            const senderAvatar = msg.sender?.avatar || defaultAvatar;
+            const myAvatar = user?.avatar || defaultAvatar;
+
             return (
               <motion.div
                 key={msg._id || Math.random()}
@@ -283,46 +298,45 @@ const ChatPage = () => {
               >
                 {!isSentByMe && (
                   <img
-                    src={`https://i.pravatar.cc/150?u=${msg.sender?._id}`}
+                    src={senderAvatar}
                     alt={msg.sender?.name}
                     className="h-8 w-8 rounded-full object-cover"
                   />
                 )}
+
                 <div
-                  className={`max-w-xs rounded-2xl p-3 shadow-lg md:max-w-md ${
+                  className={`max-w-xs rounded-2xl shadow-lg md:max-w-md ${
                     isSentByMe
                       ? "rounded-br-none bg-blue-600"
                       : "rounded-bl-none bg-gray-700"
-                  }`}
+                  } ${msg.type === "image" ? "p-1 bg-transparent" : "p-3"}`}
                 >
-                  {!isSentByMe && (
+                  {!isSentByMe && msg.type === "text" && (
                     <h3 className="mb-1 text-xs font-bold text-blue-400">
                       {msg.sender?.name || "Anonymous"}
                     </h3>
                   )}
+
                   {msg.type === "image" ? (
                     <motion.img
                       layoutId={`chat-image-${msg.content}`}
                       src={msg.content}
-                      alt="Image message"
-                      className="mt-1 max-w-full cursor-pointer rounded-lg transition-transform duration-300 hover:scale-105"
-                      style={{ maxHeight: "250px" }}
+                      alt="Sent in chat"
+                      className="max-w-full h-auto rounded-xl cursor-pointer"
                       onClick={() => setSelectedImage(msg.content)}
                     />
                   ) : (
-                    <p className="text-sm leading-relaxed">{msg.content}</p>
+                    <p className="text-white break-words">{msg.content}</p>
                   )}
-                  <div
-                    className={`mt-1 text-right text-xs ${
-                      isSentByMe ? "text-blue-100/70" : "text-gray-400"
-                    }`}
-                  >
-                    {new Date(msg.createdAt).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </div>
                 </div>
+
+                {isSentByMe && (
+                  <img
+                    src={myAvatar}
+                    alt={user?.name}
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                )}
               </motion.div>
             );
           })}

@@ -6,7 +6,7 @@ const router = express.Router();
 router.get("/:chatId", authMiddleware, async (req, res) => {
   try {
     const messages = await Message.find({ chat: req.params.chatId })
-      .populate("sender", "name")
+      .populate("sender", "name avatar")
       .sort({ createdAt: "asc" });
 
     res.json(messages);

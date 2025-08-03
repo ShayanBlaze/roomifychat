@@ -1,18 +1,25 @@
 const jwt = require("jsonwebtoken");
-const { UnauthenticatedError } = require("../errors");
+const { StatusCodes } = require("http-status-codes");
 
 const authMiddleware = (req, res, next) => {
-  const token = req.header("Authorization")?.replace("Bearer ", "");
-  if (!token) {
-    throw new UnauthenticatedError("No token provided");
+  const authHeader = req.header("Authorization");
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res
+      .status(StatusCodes.UNAUTHORIZED)
+      .json({ message: "No token provided or token is invalid" });
   }
+
+  const token = authHeader.split(" ")[1];
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     next();
   } catch (error) {
-    throw new UnauthenticatedError("Unauthorized");
+    return res
+      .status(StatusCodes.UNAUTHORIZED)
+      .json({ message: "Token is not valid" });
   }
 };
 

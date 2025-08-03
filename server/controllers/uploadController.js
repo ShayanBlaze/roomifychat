@@ -1,13 +1,12 @@
-const BadRequestError = require("../errors");
-
 const uploadImage = (req, res) => {
   if (!req.file) {
-    throw new BadRequestError("No file uploaded");
+    return res.status(400).json({ message: "No file uploaded." });
   }
 
-  res
-    .status(200)
-    .json({ message: "File uploaded successfully", imageUrl: req.file.path });
+  res.status(200).json({ 
+    message: "File uploaded successfully", 
+    url: req.file.path 
+  });
 };
 
 module.exports = { uploadImage };

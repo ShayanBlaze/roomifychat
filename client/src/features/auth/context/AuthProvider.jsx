@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import setAuthToken from "../services/setAuthToken";
 import axios from "axios";
 import { AuthContext } from "./AuthContext";
@@ -10,6 +10,15 @@ const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem("token");
+    setAuthToken(null);
+    setToken(null);
+    setUser(null);
+    setIsAuthenticated(false);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -28,7 +37,7 @@ const AuthProvider = ({ children }) => {
       setLoading(false);
     };
     loadUser();
-  }, []);
+  }, [logout]);
 
   const login = (data) => {
     const userToken = data.token;
@@ -40,17 +49,11 @@ const AuthProvider = ({ children }) => {
     setLoading(false);
   };
 
-  const registerSuccess = (data) => {
-    login(data);
-  };
-
-  const logout = () => {
-    localStorage.removeItem("token");
-    setAuthToken(null);
-    setToken(null);
-    setUser(null);
-    setIsAuthenticated(false);
-    setLoading(false);
+  const updateUser = (updatedUserData) => {
+    setUser((currentUser) => ({
+      ...currentUser,
+      ...updatedUserData,
+    }));
   };
 
   const providerValue = {
@@ -60,7 +63,7 @@ const AuthProvider = ({ children }) => {
     user,
     login,
     logout,
-    registerSuccess,
+    updateUser,
   };
 
   return (
