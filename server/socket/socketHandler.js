@@ -10,20 +10,24 @@ const initializeSocket = (io) => {
 
     socket.on("sendMessage", async (data) => {
       try {
+        const { content, type, sender, tempId } = data;
+
         const message = new Message({
-          content: data.content,
-          type: data.type,
-          sender: data.sender._id,
+          content: content,
+          type: type,
+          sender: sender._id,
           chat: "general",
         });
 
         const savedMessage = await message.save();
-
         const populatedMessage = await Message.findById(
           savedMessage._id
         ).populate("sender", "name _id avatar");
 
-        io.emit("newMessage", populatedMessage);
+        const finalMessage = populatedMessage.toObject();
+        finalMessage.tempId = tempId;
+
+        io.emit("newMessage", finalMessage);
       } catch (error) {
         console.error("Error saving or broadcasting message:", error);
 

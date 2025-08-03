@@ -169,14 +169,30 @@ const ChatPage = () => {
       }
     };
     fetchMessages();
-    socket.on("newMessage", (message) => {
-      setMessages((prevMessages) => [...prevMessages, message]);
+
+    socket.on("newMessage", (receivedMessage) => {
+      setMessages((prevMessages) => {
+        const isConfirmation =
+          receivedMessage.tempId && receivedMessage.sender._id === user._id;
+
+        if (isConfirmation) {
+          return prevMessages.map((msg) =>
+            msg._id === receivedMessage.tempId ? receivedMessage : msg
+          );
+        } else {
+          if (!prevMessages.some((msg) => msg._id === receivedMessage._id)) {
+            return [...prevMessages, receivedMessage];
+          }
+        }
+        return prevMessages;
+      });
     });
+
     return () => {
       socket.off("newMessage");
       socket.disconnect();
     };
-  }, [token]);
+  }, [token, user]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -186,6 +202,7 @@ const ChatPage = () => {
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file || !socket) return;
+
     const formData = new FormData();
     formData.append("file", file);
 
@@ -219,11 +236,24 @@ const ChatPage = () => {
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (newMessage.trim() && user && socket) {
-      socket.emit("sendMessage", {
-        type: "text",
+      const tempId = Date.now().toString();
+
+      const tempMessage = {
+        _id: tempId,
         content: newMessage,
+        type: "text",
         sender: user,
+        status: "sent",
+        createdAt: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, tempMessage]);
+
+      socket.emit("sendMessage", {
+        ...tempMessage, 
+        tempId: tempId,
       });
+
       setNewMessage("");
       if (socket) {
         socket.emit("stopTyping", { sender: user.name });
@@ -336,6 +366,12 @@ const ChatPage = () => {
                     alt={user?.name}
                     className="h-8 w-8 rounded-full object-cover"
                   />
+                )}
+                {isSentByMe && (
+                  <div className="text-right text-xs mt-1 text-gray-300">
+                    {msg.status === "sent" && <span>✓</span>}
+                    {msg.status === "delivered" && <span>✓✓</span>}
+                  </div>
                 )}
               </motion.div>
             );
