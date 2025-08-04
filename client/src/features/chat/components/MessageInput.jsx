@@ -6,6 +6,7 @@ const MessageInput = ({
   handleTyping,
   handleSendMessage,
   handleFileChange,
+  isUploading,
 }) => {
   return (
     <footer className="shrink-0 border-t border-gray-700 bg-gray-800 p-2 sm:p-4">
@@ -19,7 +20,11 @@ const MessageInput = ({
           htmlFor="file-input"
           className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
         >
-          <AttachmentIcon />
+          {isUploading ? (
+            <div className="w-5 h-5 border-2 border-t-transparent border-gray-400 rounded-full animate-spin"></div>
+          ) : (
+            <AttachmentIcon />
+          )}
         </motion.label>
         <input
           id="file-input"

@@ -7,7 +7,7 @@ const MessageList = ({ messages, user, onImageClick, messagesEndRef }) => {
       <AnimatePresence initial={false}>
         {messages.map((msg) => (
           <MessageItem
-            key={msg._id || Math.random()}
+            key={msg.tempId || msg._id}
             msg={msg}
             isSentByMe={msg.sender?._id === user?._id}
             user={user}

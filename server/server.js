@@ -46,10 +46,9 @@ app.get("/api/v1", (req, res) => {
 });
 
 app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/messages", messageRoutes);
-app.use("/api/v1/upload", uploadRoutes);
-app.use("/api/v1/user", userRoutes);
-
+app.use("/api/v1/upload", authMiddleware, uploadRoutes);
+app.use("/api/v1/messages", authMiddleware, messageRoutes);
+app.use("/api/v1/user", authMiddleware, userRoutes);
 app.use("/api/v1/dashboard", authMiddleware, getDashboardData);
 
 // --- Server Listening ---

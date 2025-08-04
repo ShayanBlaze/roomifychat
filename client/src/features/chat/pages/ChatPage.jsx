@@ -26,6 +26,7 @@ const ChatPage = () => {
     emitStopTyping,
   } = useChat(user, token);
 
+  const [isUploading, setIsUploading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const typingTimeoutRef = useRef(null);
@@ -68,6 +69,7 @@ const ChatPage = () => {
     const formData = new FormData();
     formData.append("file", file);
 
+    setIsUploading(true);
     try {
       const uploadConfig = {
         headers: {
@@ -90,6 +92,8 @@ const ChatPage = () => {
       }
     } catch (error) {
       console.error("Error uploading image:", error);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -109,6 +113,7 @@ const ChatPage = () => {
         handleTyping={handleTyping}
         handleSendMessage={handleSendMessage}
         handleFileChange={handleFileChange}
+        isUploading={isUploading}
       />
 
       <AnimatePresence>
