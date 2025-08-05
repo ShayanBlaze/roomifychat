@@ -1,22 +1,20 @@
 import { useState, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
-import axios from "axios";
+import { useOutletContext } from "react-router-dom";
 
-// --- Hooks ---
 import useAuth from "../../auth/hooks/useAuth";
 import { useChat } from "../hooks/useChat";
 
-// --- Components ---
 import ChatHeader from "../components/ChatHeader";
 import MessageList from "../components/MessageList";
 import MessageInput from "../components/MessageInput";
 import ImageModal from "../components/ImageModal";
+import api from "../../../services/api";
 
-/**
- * The main chat page component, which orchestrates all chat-related components and logic.
- */
 const ChatPage = () => {
-  const { user, token } = useAuth();
+  const { onMenuClick } = useOutletContext();
+  const { user } = useAuth();
+
   const {
     messages,
     typingUsers,
@@ -24,14 +22,21 @@ const ChatPage = () => {
     sendMessage,
     emitTyping,
     emitStopTyping,
-  } = useChat(user, token);
+  } = useChat();
 
   const [isUploading, setIsUploading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const typingTimeoutRef = useRef(null);
 
-  // --- Event Handlers ---
+  if (!user) {
+    return (
+      <div className="flex flex-1 justify-center items-center h-full text-white">
+        Loading chat...
+      </div>
+    );
+  }
+
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (newMessage.trim() && user) {
@@ -43,8 +48,8 @@ const ChatPage = () => {
         sender: user,
       });
       setNewMessage("");
-      emitStopTyping(user.name);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      emitStopTyping(user.name);
     }
   };
 
@@ -52,9 +57,8 @@ const ChatPage = () => {
     setNewMessage(e.target.value);
     if (!typingTimeoutRef.current) {
       emitTyping(user.name);
-    } else {
-      clearTimeout(typingTimeoutRef.current);
     }
+    clearTimeout(typingTimeoutRef.current);
 
     typingTimeoutRef.current = setTimeout(() => {
       emitStopTyping(user.name);
@@ -71,20 +75,13 @@ const ChatPage = () => {
 
     setIsUploading(true);
     try {
-      const uploadConfig = {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
-        },
-      };
-      const { data } = await axios.post(
-        "/api/v1/upload/chat-image",
-        formData,
-        uploadConfig
-      );
+      const { data } = await api.post("/upload/chat-image", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       if (data.url) {
         sendMessage({
+          tempId: Date.now().toString(),
           type: "image",
           content: data.url,
           sender: user,
@@ -99,7 +96,7 @@ const ChatPage = () => {
 
   return (
     <div className="flex h-full flex-1 flex-col bg-gray-800 font-sans text-white">
-      <ChatHeader typingUsers={typingUsers} />
+      <ChatHeader typingUsers={typingUsers} onMenuClick={onMenuClick} />
 
       <MessageList
         messages={messages}

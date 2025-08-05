@@ -1,77 +1,73 @@
 import { useState, useEffect, useRef } from "react";
-import { io } from "socket.io-client";
-import axios from "axios";
+import api from "../../../services/api";
+import useAuth from "../../auth/hooks/useAuth";
+import { useSocket } from "../../auth/context/SocketProvider";
 
-let socket;
+export const useChat = () => {
+  const socket = useSocket();
+  const { user } = useAuth();
 
-export const useChat = (user, token) => {
   const [messages, setMessages] = useState([]);
   const [typingUsers, setTypingUsers] = useState([]);
   const messagesEndRef = useRef(null);
 
-  // Effect for initializing socket and fetching initial messages
   useEffect(() => {
-    if (!token || !user) return;
-
-    socket = io("http://localhost:3000/");
-
-    const fetchMessages = async () => {
+    const fetchInitialMessages = async () => {
       try {
-        const response = await axios.get("/api/v1/messages/general", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.get("/messages/general");
         setMessages(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
-        console.error("Failed to fetch messages:", error);
+        console.error("Failed to fetch initial messages:", error);
       }
     };
-    fetchMessages();
 
-    // --- Socket Event Listeners ---
-    socket.on("newMessage", (receivedMessage) => {
+    fetchInitialMessages();
+  }, []);
+
+  useEffect(() => {
+    if (!socket || !user) return;
+
+    const handleNewMessage = (receivedMessage) => {
       setMessages((prevMessages) => {
-        const isConfirmation =
-          receivedMessage.tempId && receivedMessage.sender._id === user._id;
-        if (isConfirmation) {
+        if (receivedMessage.tempId && receivedMessage.sender._id === user._id) {
           return prevMessages.map((msg) =>
             msg._id === receivedMessage.tempId ? receivedMessage : msg
           );
-        } else if (
-          !prevMessages.some((msg) => msg._id === receivedMessage._id)
-        ) {
+        }
+        if (!prevMessages.some((msg) => msg._id === receivedMessage._id)) {
           return [...prevMessages, receivedMessage];
         }
         return prevMessages;
       });
-    });
+    };
 
-    socket.on("userTyping", (data) => {
-      setTypingUsers((prev) =>
-        prev.includes(data.sender) ? prev : [...prev, data.sender]
-      );
-    });
+    const handleUserTyping = (data) => {
+      setTypingUsers((prev) => [...prev.filter((u) => u.id !== data.id), data]);
+    };
 
-    socket.on("userStoppedTyping", (data) => {
-      setTypingUsers((prev) => prev.filter((u) => u !== data.sender));
-    });
+    const handleUserStoppedTyping = (data) => {
+      setTypingUsers((prev) => prev.filter((u) => u.id !== data.id));
+    };
 
-    socket.on("messageStatusUpdate", (updatedMsg) => {
+    const handleMessageStatusUpdate = (updatedMsg) => {
       setMessages((prev) =>
         prev.map((msg) => (msg._id === updatedMsg._id ? updatedMsg : msg))
       );
-    });
-
-    // --- Cleanup ---
-    return () => {
-      socket.off("newMessage");
-      socket.off("userTyping");
-      socket.off("userStoppedTyping");
-      socket.off("messageStatusUpdate");
-      socket.disconnect();
     };
-  }, [token, user]);
 
-  // Effect for auto-scrolling and marking messages as read
+    socket.on("newMessage", handleNewMessage);
+    socket.on("userTyping", handleUserTyping);
+    socket.on("userStoppedTyping", handleUserStoppedTyping);
+    socket.on("messageStatusUpdate", handleMessageStatusUpdate);
+
+    return () => {
+      socket.off("newMessage", handleNewMessage);
+      socket.off("userTyping", handleUserTyping);
+      socket.off("userStoppedTyping", handleUserStoppedTyping);
+      socket.off("messageStatusUpdate", handleMessageStatusUpdate);
+    };
+  }, [socket, user]);
+
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -82,38 +78,36 @@ export const useChat = (user, token) => {
     );
 
     if (unreadMessages.length > 0 && socket) {
-      socket.emit("messageSeen", {
-        messageId: unreadMessages[0]._id,
-        readerId: user._id,
-      });
+      socket.emit("messageSeen", { messageId: unreadMessages[0]._id });
     }
-  }, [messages, user]);
+  }, [messages, user, socket]);
 
-  // --- Emitter Functions ---
   const sendMessage = (messageData) => {
-    if (socket) {
-      // Add temporary message to state immediately for better UX
-      if (messageData.type === "text") {
-        const tempMessage = {
-          _id: messageData.tempId,
-          content: messageData.content,
-          type: "text",
-          sender: user,
-          status: "sent",
-          createdAt: new Date().toISOString(),
-        };
-        setMessages((prev) => [...prev, tempMessage]);
-      }
-      socket.emit("sendMessage", messageData);
+    if (socket && user) {
+      const optimisticMessage = {
+        _id: messageData.tempId,
+        content: messageData.content,
+        type: messageData.type,
+        sender: user,
+        status: "sent",
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, optimisticMessage]);
+
+      socket.emit("sendMessage", {
+        content: messageData.content,
+        type: messageData.type,
+        tempId: messageData.tempId,
+      });
     }
   };
 
   const emitTyping = (userName) => {
-    if (socket) socket.emit("typing", { sender: userName });
+    if (socket) socket.emit("typing", { id: socket.id, name: userName });
   };
 
   const emitStopTyping = (userName) => {
-    if (socket) socket.emit("stopTyping", { sender: userName });
+    if (socket) socket.emit("stopTyping", { id: socket.id, name: userName });
   };
 
   return {

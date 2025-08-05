@@ -1,66 +1,63 @@
 import { useEffect, useState, useCallback } from "react";
-import setAuthToken from "../services/setAuthToken";
-import axios from "axios";
 import { AuthContext } from "./AuthContext";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { SocketProvider } from "./SocketProvider";
+import api from "../../../services/api";
 
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem("token"));
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem("token");
-    setAuthToken(null);
-    setToken(null);
-    setUser(null);
-    setIsAuthenticated(false);
-    setLoading(false);
-  }, []);
-
   useEffect(() => {
-    const loadUser = async () => {
-      const localToken = localStorage.getItem("token");
-      if (localToken) {
-        setAuthToken(localToken);
+    const initializeAuth = async () => {
+      if (token && !user) {
         try {
-          const res = await axios.get(`${API_URL}/auth/me`);
+          const res = await api.get("/user/profile");
           setUser(res.data);
-          setIsAuthenticated(true);
         } catch (err) {
-          console.error("Failed to load user:", err);
-          logout();
+          console.error("Token is invalid, logging out:", err);
+          localStorage.removeItem("token");
+          setToken(null);
+          setUser(null);
         }
       }
       setLoading(false);
     };
-    loadUser();
-  }, [logout]);
 
-  const login = (data) => {
-    const userToken = data.token;
-    localStorage.setItem("token", userToken);
-    setAuthToken(userToken);
-    setToken(userToken);
-    setIsAuthenticated(true);
-    setUser(data.user);
-    setLoading(false);
+    initializeAuth();
+  }, [token]);
+
+  const login = async (data) => {
+    try {
+      localStorage.setItem("token", data.token);
+      setToken(data.token);
+
+      const profileResponse = await api.get("/user/profile");
+      setUser(profileResponse.data);
+    } catch (error) {
+      console.error("Failed to fetch profile after login. Logging out.", error);
+      localStorage.removeItem("token");
+      setToken(null);
+      setUser(null);
+    }
   };
+
+  const logout = useCallback(() => {
+    localStorage.removeItem("token");
+    setToken(null);
+    setUser(null);
+  }, []);
 
   const updateUser = (updatedUserData) => {
-    setUser((currentUser) => ({
-      ...currentUser,
-      ...updatedUserData,
-    }));
+    setUser((currentUser) => ({ ...currentUser, ...updatedUserData }));
   };
 
+  const isAuthenticated = !!user;
   const providerValue = {
     token,
-    isAuthenticated,
     loading,
     user,
+    isAuthenticated,
     login,
     logout,
     updateUser,
@@ -68,7 +65,7 @@ const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={providerValue}>
-      {children}
+      <SocketProvider>{!loading && children}</SocketProvider>
     </AuthContext.Provider>
   );
 };

@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import authService from "../services/authService"; // Your auth service
-import useAuth from "../hooks/useAuth"; // Your auth hook
-
-// --- Reusable Helper Components (Same as LoginPage for consistency) --- //
+import authService from "../services/authService";
+import useAuth from "../hooks/useAuth";
 
 const AuthIllustration = () => (
   <div className="relative w-full h-full flex items-center justify-center">
@@ -61,7 +59,6 @@ const Spinner = () => (
   />
 );
 
-// --- Main RegisterPage Component --- //
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
@@ -90,10 +87,9 @@ const RegisterPage = () => {
     setLoading(true);
     setError(null);
     try {
-      // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 1500));
       const data = await authService.register(formData);
-      auth.login(data); // Assuming your auth context has a method to handle login after register
+      auth.login(data);
       navigate("/dashboard");
     } catch (err) {
       setError("Registration failed. This email may already be in use.");

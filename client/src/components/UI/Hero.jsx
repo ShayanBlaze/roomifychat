@@ -1,10 +1,6 @@
-// src/components/UI/Hero.jsx
-
-import React from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
-// کامپوننت برای هر آیکون شناور (بدون تغییر)
 const FloatingIcon = ({ children, position, animation }) => (
   <motion.div
     className="absolute"
@@ -21,7 +17,6 @@ const FloatingIcon = ({ children, position, animation }) => (
   </motion.div>
 );
 
-// --- مجموعه آیکون‌های SVG حرفه‌ای ---
 const PaperPlaneIcon = ({ className }) => (
   <svg
     className={className}
@@ -68,7 +63,6 @@ const ChatBubbleIcon = ({ className }) => (
   </svg>
 );
 
-// --- بازنویسی کامل HeroIllustration با آیکون‌های حرفه‌ای ---
 const HeroIllustration = () => {
   const icons = [
     {
@@ -100,7 +94,7 @@ const HeroIllustration = () => {
       },
     },
     {
-      icon: <span className="text-3xl">👍</span>, // ایموجی می‌تواند در کنار آیکون‌ها باشد
+      icon: <span className="text-3xl">👍</span>,
       position: { bottom: "15%", right: "10%" },
       animation: {
         animate: { y: [0, 20, 0] },
@@ -111,7 +105,6 @@ const HeroIllustration = () => {
 
   return (
     <div className="relative w-full h-80 flex items-center justify-center">
-      {/* پس‌زمینه‌های مات و نرم برای ایجاد عمق */}
       <motion.div
         className="absolute w-56 h-56 md:w-80 md:h-80 bg-cyan-500/5 rounded-full filter blur-2xl"
         animate={{ scale: [1, 1.05, 1] }}
@@ -128,7 +121,6 @@ const HeroIllustration = () => {
         }}
       />
 
-      {/* رندر کردن آیکون‌های شناور در کپسول‌های شیشه‌ای */}
       {icons.map((item, index) => (
         <FloatingIcon
           key={index}
@@ -144,7 +136,6 @@ const HeroIllustration = () => {
   );
 };
 
-// بقیه کامپوننت Hero (بدون تغییر)
 const Hero = () => {
   return (
     <section className="flex-grow flex items-center relative z-10">

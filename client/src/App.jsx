@@ -1,5 +1,3 @@
-// src/App.jsx
-
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import LoginPage from "./features/auth/pages/LoginPage";
 import HomePage from "./components/pages/HomePage";
@@ -11,14 +9,14 @@ import AuthProvider from "./features/auth/context/AuthProvider";
 import PublicRoutes from "./features/auth/routes/PublicRoutes";
 import ProfilePage from "./features/profile/ProfilePage";
 import MainLayout from "./components/layout/MainLayout";
-import PublicLayout from "./components/layout/PublicLayout"; // ایمپورت قالب جدید
+import PublicLayout from "./components/layout/PublicLayout";
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          {/* === مسیرهای عمومی جدید با هدر ثابت === */}
+          {/* Public Routes with Fixed Header */}
           <Route element={<PublicLayout />}>
             <Route path="/" element={<HomePage />} />
             <Route element={<PublicRoutes />}>
@@ -27,7 +25,7 @@ function App() {
             </Route>
           </Route>
 
-          {/* مسیرهای محافظت شده (بدون تغییر) */}
+          {/* Protected Routes */}
           <Route element={<ProtectedRoutes />}>
             <Route element={<MainLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />

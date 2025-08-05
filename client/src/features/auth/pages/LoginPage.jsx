@@ -1,12 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import authService from "../services/authService"; // Your auth service
-import useAuth from "../hooks/useAuth"; // Your auth hook
+import authService from "../services/authService";
+import useAuth from "../hooks/useAuth";
 
-// --- Helper Components --- //
-
-// A cool, abstract animated illustration for the side panel
 const AuthIllustration = () => (
   <div className="relative w-full h-full flex items-center justify-center">
     <motion.div
@@ -39,7 +36,6 @@ const AuthIllustration = () => (
   </div>
 );
 
-// A reusable input field with an icon
 const InputField = ({ icon, type, name, value, onChange, placeholder }) => (
   <div className="relative flex items-center">
     <span className="absolute left-4 text-gray-400">{icon}</span>
@@ -55,7 +51,6 @@ const InputField = ({ icon, type, name, value, onChange, placeholder }) => (
   </div>
 );
 
-// A simple loading spinner
 const Spinner = () => (
   <motion.div
     className="w-6 h-6 border-4 border-t-transparent border-white rounded-full"
@@ -64,7 +59,6 @@ const Spinner = () => (
   />
 );
 
-// --- Main LoginPage Component --- //
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -86,10 +80,9 @@ const LoginPage = () => {
     setLoading(true);
     setError(null);
     try {
-      // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 1500));
       const data = await authService.login(formData);
-      auth.login(data);
+      await auth.login(data);
       navigate(from, { replace: true });
     } catch (err) {
       setError("Invalid credentials. Please try again.");

@@ -1,11 +1,7 @@
-// src/components/layout/PublicLayout.jsx
-
-import React from "react";
 import { Outlet } from "react-router-dom";
 import { motion } from "framer-motion";
-import PublicHeader from "../UI/PublicHeader"; // هدر جدید را ایمپورت کنید
+import PublicHeader from "../UI/PublicHeader";
 
-// پس‌زمینه انیمیشنی که در صفحه اصلی بود
 const AnimatedBackground = () => (
   <motion.div
     className="fixed inset-0 -z-10 w-full h-full"
@@ -24,7 +20,7 @@ const PublicLayout = () => {
       <AnimatedBackground />
       <PublicHeader />
       <main className="flex-grow flex flex-col">
-        <Outlet /> {/* صفحات عمومی در اینجا رندر می‌شوند */}
+        <Outlet />
       </main>
     </div>
   );

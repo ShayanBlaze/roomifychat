@@ -1,6 +1,4 @@
-// src/components/UI/PublicHeader.jsx
-
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, NavLink } from "react-router-dom";
 import Logo from "/chat-bubble.png";

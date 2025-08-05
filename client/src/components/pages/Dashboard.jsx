@@ -1,5 +1,3 @@
-// src/components/pages/Dashboard.jsx
-
 import useAuth from "../../features/auth/hooks/useAuth";
 import { motion } from "framer-motion";
 
