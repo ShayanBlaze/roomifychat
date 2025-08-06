@@ -20,9 +20,11 @@ const MenuIcon = () => (
 const ChatHeader = ({ typingUsers, onMenuClick }) => {
   const getTypingText = () => {
     const names = typingUsers;
+    console.log(typingUsers[0].name);
     if (names.length === 0) return "";
-    if (names.length === 1) return `${names[0]} is typing...`;
-    if (names.length === 2) return `${names[0]} and ${names[1]} are typing...`;
+    if (names.length === 1) return `${names[0].name} is typing...`;
+    if (names.length === 2)
+      return `${names[0].name} and ${names[1].name} are typing...`;
     return "Several people are typing...";
   };
 
