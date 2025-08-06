@@ -45,7 +45,26 @@ const updateUserProfile = async (req, res) => {
   }
 };
 
+// @desc    Get user profile by ID
+// @route   GET /api/v1/user/:id
+// @access  Private
+const getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("-password");
+
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  } catch (error) {
+    console.error("Error fetching user by ID:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
 module.exports = {
   getUserProfile,
   updateUserProfile,
+  getUserById,
 };

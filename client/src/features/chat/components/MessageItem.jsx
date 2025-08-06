@@ -1,6 +1,12 @@
 import { motion } from "framer-motion";
 
-const MessageItem = ({ msg, isSentByMe, user, onImageClick }) => {
+const MessageItem = ({
+  msg,
+  isSentByMe,
+  user,
+  onImageClick,
+  onUserAvatarClick,
+}) => {
   const defaultAvatar =
     "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg";
   const senderAvatar = msg.sender?.avatar || defaultAvatar;
@@ -21,7 +27,8 @@ const MessageItem = ({ msg, isSentByMe, user, onImageClick }) => {
         <img
           src={senderAvatar}
           alt={msg.sender?.name}
-          className="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover"
+          className="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover cursor-pointer"
+          onClick={() => onUserAvatarClick(msg.sender._id)}
         />
       )}
 

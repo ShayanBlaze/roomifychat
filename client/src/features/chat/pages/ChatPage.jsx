@@ -9,6 +9,7 @@ import ChatHeader from "../components/ChatHeader";
 import MessageList from "../components/MessageList";
 import MessageInput from "../components/MessageInput";
 import ImageModal from "../components/ImageModal";
+import UserProfilePopup from "../components/UserProfilePopup";
 import api from "../../../services/api";
 
 const ChatPage = () => {
@@ -28,6 +29,8 @@ const ChatPage = () => {
   const [newMessage, setNewMessage] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const typingTimeoutRef = useRef(null);
+  const [isPopupVisible, setPopupVisible] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   if (!user) {
     return (
@@ -94,6 +97,23 @@ const ChatPage = () => {
     }
   };
 
+  const handleUserClick = async (userId) => {
+    if (!userId) return;
+
+    try {
+      const { data } = await api.get(`/user/${userId}`);
+      setSelectedUser(data);
+      setPopupVisible(true);
+    } catch (error) {
+      console.error("Failed to fetch user profile:", error);
+    }
+  };
+
+  const handleClosePopup = () => {
+    setPopupVisible(false);
+    setSelectedUser(null);
+  };
+
   return (
     <div className="flex h-full flex-1 flex-col bg-gray-800 font-sans text-white">
       <ChatHeader typingUsers={typingUsers} onMenuClick={onMenuClick} />
@@ -103,6 +123,7 @@ const ChatPage = () => {
         user={user}
         onImageClick={setSelectedImage}
         messagesEndRef={messagesEndRef}
+        onUserAvatarClick={handleUserClick}
       />
 
       <MessageInput
@@ -121,6 +142,12 @@ const ChatPage = () => {
           />
         )}
       </AnimatePresence>
+
+      <UserProfilePopup
+        user={selectedUser}
+        show={isPopupVisible}
+        onClose={handleClosePopup}
+      />
     </div>
   );
 };

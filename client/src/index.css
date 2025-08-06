@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
-body{
-    @apply bg-black text-white;
+body {
+  @apply bg-black text-white;
+}
+
+@layer utilities {
+  @keyframes fadeInScale {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .animate-fade-in-scale {
+    animation: fadeInScale 0.3s ease-out forwards;
+  }
 }
