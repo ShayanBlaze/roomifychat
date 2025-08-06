@@ -152,7 +152,7 @@ const SidebarContent = ({ onLinkClick }) => {
       <div className="mt-auto">
         <button
           onClick={handleLogout}
-          className="flex items-center w-full gap-4 p-3 rounded-lg text-gray-400 hover:bg-red-800/50 hover:text-white transition-colors"
+          className="flex items-center w-full gap-4 p-3 rounded-lg text-gray-400 hover:bg-red-800/50 hover:text-white transition-colors cursor-pointer"
         >
           <LogoutIcon />
           <span className="font-semibold">Logout</span>

@@ -20,7 +20,6 @@ const MenuIcon = () => (
 const ChatHeader = ({ typingUsers, onMenuClick }) => {
   const getTypingText = () => {
     const names = typingUsers;
-    console.log(typingUsers[0].name);
     if (names.length === 0) return "";
     if (names.length === 1) return `${names[0].name} is typing...`;
     if (names.length === 2)
@@ -29,7 +28,7 @@ const ChatHeader = ({ typingUsers, onMenuClick }) => {
   };
 
   return (
-    <header className="flex shrink-0 items-center justify-between border-b border-gray-700 bg-gray-800/50 backdrop-blur-sm p-3 sm:p-4 shadow-md z-10">
+    <header className="flex shrink-0 items-center justify-between bg-gray-800/50 backdrop-blur-sm p-3 sm:p-4 z-10">
       {/* Hamburger menu button for mobile */}
       <button onClick={onMenuClick} className="p-2 text-white md:hidden">
         <MenuIcon />
@@ -37,14 +36,15 @@ const ChatHeader = ({ typingUsers, onMenuClick }) => {
 
       <div className="flex-grow md:ml-0 ml-4">
         <h1 className="text-lg sm:text-xl font-bold text-white"># general</h1>
-        <div className="h-5 text-xs sm:text-sm text-blue-400">
+        <div className="h-5 text-xs sm:text-sm text-cyan-400">
           <AnimatePresence>
             {typingUsers.length > 0 && (
               <motion.p
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
-                className="animate-pulse"
+                transition={{ duration: 0.3 }}
+                className="font-semibold"
               >
                 {getTypingText()}
               </motion.p>
@@ -53,8 +53,8 @@ const ChatHeader = ({ typingUsers, onMenuClick }) => {
         </div>
       </div>
 
-      {/* Empty div for future alignment */}
-      <div className="w-8 h-8"></div>
+      {/* Empty div for aligning the title correctly */}
+      <div className="w-8 h-8 md:hidden"></div>
     </header>
   );
 };

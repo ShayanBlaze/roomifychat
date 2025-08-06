@@ -9,7 +9,8 @@ const MessageList = ({
   onUserAvatarClick,
 }) => {
   return (
-    <main className="flex-1 space-y-4 overflow-y-auto p-3 sm:p-4 md:p-6">
+    // Changed space-y-4 to space-y-6 for more breathing room
+    <main className="flex-1 space-y-6 overflow-y-auto p-3 sm:p-4 md:p-6">
       <AnimatePresence initial={false}>
         {messages.map((msg) => (
           <MessageItem

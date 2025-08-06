@@ -115,7 +115,8 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex h-full flex-1 flex-col bg-gray-800 font-sans text-white">
+    // The only change is here: bg-gray-900
+    <div className="flex h-full flex-1 flex-col bg-gray-900 font-sans text-white">
       <ChatHeader typingUsers={typingUsers} onMenuClick={onMenuClick} />
 
       <MessageList

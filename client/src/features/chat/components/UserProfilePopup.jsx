@@ -65,7 +65,7 @@ const UserProfilePopup = ({ user, show, onClose }) => {
     <AnimatePresence>
       {show && user && (
         <motion.div
-          className="fixed inset-0 bg-black/70 flex justify-center items-center z-50"
+          className="fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4"
           variants={backdropVariants}
           initial="hidden"
           animate="visible"
@@ -95,7 +95,8 @@ const UserProfilePopup = ({ user, show, onClose }) => {
             >
               <motion.div
                 variants={contentItemVariants}
-                className="p-1 bg-gradient-to-tr from-blue-500 to-purple-500 rounded-full"
+                // Changed gradient to match the new theme
+                className="p-1 bg-gradient-to-tr from-teal-500 to-cyan-500 rounded-full"
               >
                 <img
                   src={user.avatar}
@@ -123,9 +124,9 @@ const UserProfilePopup = ({ user, show, onClose }) => {
 
               <motion.div
                 variants={contentItemVariants}
-                className="flex space-x-4 mt-6"
+                className="flex space-x-4 mt-6 w-full"
               >
-                <button className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center space-x-2 hover:bg-blue-700 transition-colors">
+                <button className="flex-1 bg-teal-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center space-x-2 hover:bg-teal-700 transition-colors">
                   <MessageIcon className="h-5 w-5" />
                   <span>Message</span>
                 </button>
