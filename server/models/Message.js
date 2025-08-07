@@ -11,14 +11,15 @@ const messageSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    conversationId: {
+      type: mongoose.Schema.Types.Mixed,
+      required: true,
+      index: true,
+    },
     type: {
       type: String,
       enum: ["text", "image"],
       default: "text",
-    },
-    chat: {
-      type: String,
-      default: "general",
     },
     status: {
       type: String,

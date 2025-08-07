@@ -7,6 +7,7 @@ const connectDB = require("./config/db");
 const initializeSocket = require("./socket/socketHandler");
 const authRoutes = require("./routes/auth");
 const messageRoutes = require("./routes/messageRoutes");
+const conversationRoute = require("./routes/conversationRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const userRoutes = require("./routes/userRoutes");
 const { getDashboardData } = require("./controllers/dashboardController");
@@ -38,6 +39,7 @@ app.use(authMiddleware);
 app.use("/api/v1/upload", uploadRoutes);
 app.use("/api/v1/messages", messageRoutes);
 app.use("/api/v1/user", userRoutes);
+app.use("/api/v1/conversations", conversationRoute);
 app.use("/api/v1/dashboard", getDashboardData);
 
 const PORT = process.env.PORT || 3000;

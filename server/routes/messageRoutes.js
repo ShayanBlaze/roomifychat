@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const { getGeneralMessages } = require("../controllers/messageController");
+const { getConversationMessages } = require("../controllers/messageController");
 const authMiddleware = require("../middleware/authMiddleware");
 
 router.use(authMiddleware);
 
-router.route("/general").get(getGeneralMessages);
+router.route("/:conversationId").get(getConversationMessages);
 
 module.exports = router;
