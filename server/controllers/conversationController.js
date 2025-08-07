@@ -14,8 +14,8 @@ const createOrGetConversation = async (req, res) => {
 
   // Convert string IDs to mongoose ObjectIDs for consistent comparison
   const participants = [
-    mongoose.Types.ObjectId(currentUserId),
-    mongoose.Types.ObjectId(otherUserId),
+    new mongoose.Types.ObjectId(currentUserId),
+    new mongoose.Types.ObjectId(otherUserId),
   ];
 
   try {
