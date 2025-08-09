@@ -3,7 +3,7 @@ import api from "../../../services/api";
 import useAuth from "../../auth/hooks/useAuth";
 import { useSocket } from "../../auth/context/SocketProvider";
 
-export const useChat = () => {
+export const useChat = ({ conversationId }) => {
   const socket = useSocket();
   const { user } = useAuth();
 
@@ -12,31 +12,45 @@ export const useChat = () => {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
+    if (!conversationId) return;
+
     const fetchInitialMessages = async () => {
       try {
-        const response = await api.get("/messages/general");
+        setMessages([]);
+        const response = await api.get(`/messages/${conversationId}`);
         setMessages(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         console.error("Failed to fetch initial messages:", error);
+        setMessages([]);
       }
     };
 
     fetchInitialMessages();
-  }, []);
+
+    if (socket) {
+      socket.emit("join_conversation", conversationId);
+    }
+  }, [conversationId, socket]);
 
   useEffect(() => {
     if (!socket || !user) return;
 
     const handleNewMessage = (receivedMessage) => {
       setMessages((prevMessages) => {
-        if (receivedMessage.tempId && receivedMessage.sender._id === user._id) {
+        const isOptimisticReplacement =
+          receivedMessage.tempId &&
+          prevMessages.some((msg) => msg.tempId === receivedMessage.tempId);
+
+        if (isOptimisticReplacement) {
           return prevMessages.map((msg) =>
-            msg._id === receivedMessage.tempId ? receivedMessage : msg
+            msg.tempId === receivedMessage.tempId ? receivedMessage : msg
           );
         }
+
         if (!prevMessages.some((msg) => msg._id === receivedMessage._id)) {
           return [...prevMessages, receivedMessage];
         }
+
         return prevMessages;
       });
     };
@@ -72,20 +86,23 @@ export const useChat = () => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-
     const unreadMessages = messages.filter(
       (msg) => msg.status !== "read" && msg.sender._id !== user?._id
     );
 
     if (unreadMessages.length > 0 && socket) {
-      socket.emit("messageSeen", { messageId: unreadMessages[0]._id });
+      socket.emit("messageSeen", {
+        messageId: unreadMessages[0]._id,
+        conversationId: conversationId,
+      });
     }
-  }, [messages, user, socket]);
+  }, [messages, user, socket, conversationId]);
 
   const sendMessage = (messageData) => {
     if (socket && user) {
       const optimisticMessage = {
         _id: messageData.tempId,
+        tempId: messageData.tempId,
         content: messageData.content,
         type: messageData.type,
         sender: user,
@@ -98,16 +115,29 @@ export const useChat = () => {
         content: messageData.content,
         type: messageData.type,
         tempId: messageData.tempId,
+        conversationId: conversationId,
       });
     }
   };
 
   const emitTyping = (userName) => {
-    if (socket) socket.emit("typing", { id: socket.id, name: userName });
+    if (socket) {
+      socket.emit("typing", {
+        id: socket.id,
+        name: userName,
+        conversationId: conversationId,
+      });
+    }
   };
 
   const emitStopTyping = (userName) => {
-    if (socket) socket.emit("stopTyping", { id: socket.id, name: userName });
+    if (socket) {
+      socket.emit("stopTyping", {
+        id: socket.id,
+        name: userName,
+        conversationId: conversationId,
+      });
+    }
   };
 
   return {

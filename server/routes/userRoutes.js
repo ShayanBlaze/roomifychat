@@ -7,7 +7,6 @@ const {
 } = require("../controllers/userController");
 
 router.route("/profile").get(getUserProfile).put(updateUserProfile);
-
 router.route("/:id").get(getUserById);
 
 module.exports = router;

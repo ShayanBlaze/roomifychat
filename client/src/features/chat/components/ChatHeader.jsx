@@ -17,7 +17,7 @@ const MenuIcon = () => (
   </svg>
 );
 
-const ChatHeader = ({ typingUsers, onMenuClick }) => {
+const ChatHeader = ({ typingUsers, onMenuClick, title, avatar }) => {
   const getTypingText = () => {
     const names = typingUsers;
     if (names.length === 0) return "";
@@ -34,22 +34,27 @@ const ChatHeader = ({ typingUsers, onMenuClick }) => {
         <MenuIcon />
       </button>
 
-      <div className="flex-grow md:ml-0 ml-4">
-        <h1 className="text-lg sm:text-xl font-bold text-white"># general</h1>
-        <div className="h-5 text-xs sm:text-sm text-cyan-400">
-          <AnimatePresence>
-            {typingUsers.length > 0 && (
-              <motion.p
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                transition={{ duration: 0.3 }}
-                className="font-semibold"
-              >
-                {getTypingText()}
-              </motion.p>
-            )}
-          </AnimatePresence>
+      <div className="flex items-center flex-grow md:ml-0 ml-4 gap-3">
+        {avatar && (
+          <img src={avatar} alt={title} className="w-10 h-10 rounded-full" />
+        )}
+        <div>
+          <h1 className="text-lg sm:text-xl font-bold text-white">{title}</h1>
+          <div className="h-5 text-xs sm:text-sm text-cyan-400">
+            <AnimatePresence>
+              {typingUsers.length > 0 && (
+                <motion.p
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.3 }}
+                  className="font-semibold"
+                >
+                  {getTypingText()}
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 

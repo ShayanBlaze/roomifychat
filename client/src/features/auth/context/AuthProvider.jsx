@@ -1,71 +1,74 @@
-import { useEffect, useState, useCallback } from "react";
-import { AuthContext } from "./AuthContext";
-import { SocketProvider } from "./SocketProvider";
+import { useEffect, useState, useCallback, createContext } from "react";
 import api from "../../../services/api";
+
+export const AuthContext = createContext({
+  user: null,
+  token: null,
+  loading: true,
+  conversations: [],
+  logout: () => {},
+  setConversations: () => {},
+  updateUser: () => {},
+});
 
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [token, setToken] = useState(() => localStorage.getItem("token"));
   const [loading, setLoading] = useState(true);
+  const [conversations, setConversations] = useState([]);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem("token");
+    setToken(null);
+    setUser(null);
+    setConversations([]);
+  }, []);
 
   useEffect(() => {
     const initializeAuth = async () => {
-      if (token && !user) {
+      if (token) {
         try {
-          const res = await api.get("/user/profile");
-          setUser(res.data);
+          const [profileRes, convosRes] = await Promise.all([
+            api.get("/user/profile"),
+            api.get("/conversations"),
+          ]);
+          setUser(profileRes.data);
+          setConversations(convosRes.data);
         } catch (err) {
-          console.error("Token is invalid, logging out:", err);
-          localStorage.removeItem("token");
-          setToken(null);
-          setUser(null);
+          console.error("Token is invalid or expired, logging out:", err);
+          logout();
         }
       }
       setLoading(false);
     };
 
     initializeAuth();
-  }, [token]);
+  }, [token, logout]);
 
-  const login = async (data) => {
-    try {
-      localStorage.setItem("token", data.token);
-      setToken(data.token);
-
-      const profileResponse = await api.get("/user/profile");
-      setUser(profileResponse.data);
-    } catch (error) {
-      console.error("Failed to fetch profile after login. Logging out.", error);
-      localStorage.removeItem("token");
-      setToken(null);
-      setUser(null);
-    }
-  };
-
-  const logout = useCallback(() => {
-    localStorage.removeItem("token");
-    setToken(null);
-    setUser(null);
+  const login = useCallback(async (data) => {
+    localStorage.setItem("token", data.token);
+    setToken(data.token);
   }, []);
 
-  const updateUser = (updatedUserData) => {
-    setUser((currentUser) => ({ ...currentUser, ...updatedUserData }));
+  const updateUser = (newUserData) => {
+    setUser(newUserData);
   };
 
-  const isAuthenticated = !!user;
   const providerValue = {
+    user,
     token,
     loading,
-    user,
-    isAuthenticated,
+    isAuthenticated: !!user,
+    conversations,
     login,
     logout,
+    setConversations,
     updateUser,
   };
 
   return (
     <AuthContext.Provider value={providerValue}>
-      <SocketProvider>{!loading && children}</SocketProvider>
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

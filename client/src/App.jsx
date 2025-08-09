@@ -10,31 +10,34 @@ import PublicRoutes from "./features/auth/routes/PublicRoutes";
 import ProfilePage from "./features/profile/ProfilePage";
 import MainLayout from "./components/layout/MainLayout";
 import PublicLayout from "./components/layout/PublicLayout";
+import { SocketProvider } from "./features/auth/context/SocketProvider";
 
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public Routes with Fixed Header */}
-          <Route element={<PublicLayout />}>
-            <Route path="/" element={<HomePage />} />
-            <Route element={<PublicRoutes />}>
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/login" element={<LoginPage />} />
+      <SocketProvider>
+        <Router>
+          <Routes>
+            {/* Public Routes with Fixed Header */}
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route element={<PublicRoutes />}>
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/login" element={<LoginPage />} />
+              </Route>
             </Route>
-          </Route>
 
-          {/* Protected Routes */}
-          <Route element={<ProtectedRoutes />}>
-            <Route element={<MainLayout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/chat" element={<ChatPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
+            {/* Protected Routes */}
+            <Route element={<ProtectedRoutes />}>
+              <Route element={<MainLayout />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/chat/:conversationId" element={<ChatPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+              </Route>
             </Route>
-          </Route>
-        </Routes>
-      </Router>
+          </Routes>
+        </Router>
+      </SocketProvider>
     </AuthProvider>
   );
 }

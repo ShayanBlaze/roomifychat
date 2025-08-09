@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../../features/auth/hooks/useAuth";
+import ConversationList from "../UI/ConversationList";
+import { useSocket } from "../../features/auth/context/SocketProvider";
 
 // --- icons ---
 const HomeIcon = () => (
@@ -140,7 +142,7 @@ const SidebarContent = ({ onLinkClick }) => {
           <span className="font-semibold">Dashboard</span>
         </NavLink>
         <NavLink
-          to="/chat"
+          to="/chat/general"
           onClick={onLinkClick}
           className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-700 transition-colors"
           style={({ isActive }) => (isActive ? activeLinkStyle : undefined)}
@@ -148,6 +150,7 @@ const SidebarContent = ({ onLinkClick }) => {
           <ChatIcon />
           <span className="font-semibold">Chat</span>
         </NavLink>
+        <ConversationList />
       </nav>
       <div className="mt-auto">
         <button
@@ -175,6 +178,43 @@ const MobileHeader = ({ onMenuClick, title }) => (
 const MainLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+
+  const socket = useSocket();
+  const { setConversations } = useAuth();
+
+  useEffect(() => {
+    if (!socket) {
+      return;
+    }
+
+    const handleNewConversation = (newConvo) => {
+      console.log("!!! EVENT RECEIVED: 'conversation_started'", newConvo);
+
+      setConversations((previousConversations) => {
+        console.log("--- Updating conversations state ---");
+        console.log("Previous conversations:", previousConversations);
+
+        const isAlreadyInList = previousConversations.some(
+          (c) => c._id === newConvo._id
+        );
+
+        if (isAlreadyInList) {
+          console.log("Conversation already exists. No update needed.");
+          return previousConversations;
+        }
+
+        const updatedConversations = [newConvo, ...previousConversations];
+        console.log("New conversations state:", updatedConversations);
+        return updatedConversations;
+      });
+    };
+
+    socket.on("conversation_started", handleNewConversation);
+
+    return () => {
+      socket.off("conversation_started", handleNewConversation);
+    };
+  }, [socket, setConversations]);
 
   const getPageTitle = (pathname) => {
     if (pathname.startsWith("/profile")) return "Profile";

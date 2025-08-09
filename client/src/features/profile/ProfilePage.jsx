@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
-import useAuth from "../auth/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
+import useAuth from "../auth/hooks/useAuth";
+import api from "../../services/api";
 
 const ProfilePage = () => {
   const { user, updateUser } = useAuth();
@@ -40,28 +40,15 @@ const ProfilePage = () => {
       if (selectedFile) {
         const formData = new FormData();
         formData.append("file", selectedFile);
-        const token = localStorage.getItem("token");
-        const uploadConfig = {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-          },
-        };
-        const uploadRes = await axios.post(
-          "/api/v1/upload/avatar",
-          formData,
-          uploadConfig
-        );
+        const uploadRes = await api.post("/upload/avatar", formData);
         avatarUrl = uploadRes.data.url;
       }
 
-      const token = localStorage.getItem("token");
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const { data } = await axios.put(
-        "/api/v1/user/profile",
-        { name, bio, avatar: avatarUrl },
-        config
-      );
+      const { data } = await api.put("/user/profile", {
+        name,
+        bio,
+        avatar: avatarUrl,
+      });
 
       updateUser(data);
 

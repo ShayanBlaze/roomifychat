@@ -37,12 +37,8 @@ const initializeSocket = (io) => {
     });
 
     socket.on("sendMessage", async (data) => {
-      console.log("Received 'sendMessage' event with data:", data);
-      console.log("User from socket:", socket.user);
-
       try {
         const { content, type, tempId, conversationId } = data;
-
         const senderId = socket.user.id;
 
         const message = new Message({
@@ -51,13 +47,28 @@ const initializeSocket = (io) => {
           sender: senderId,
           conversationId,
         });
-
         const savedMessage = await message.save();
 
         if (conversationId !== "general") {
-          await Conversation.findByIdAndUpdate(conversationId, {
-            lastMessage: savedMessage._id,
-          });
+          const conversation = await Conversation.findById(conversationId);
+          if (conversation) {
+            const isFirstMessage = !conversation.lastMessage;
+            conversation.lastMessage = savedMessage._id;
+            await conversation.save();
+
+            if (isFirstMessage) {
+              const populatedConvo = await Conversation.findById(conversationId)
+                .populate("participants", "name avatar")
+                .populate({
+                  path: "lastMessage",
+                  populate: { path: "sender", select: "name" },
+                });
+              io.to(conversationId).emit(
+                "conversation_started",
+                populatedConvo
+              );
+            }
+          }
         }
 
         const populatedMessage = await Message.findById(
@@ -67,30 +78,27 @@ const initializeSocket = (io) => {
         const finalMessage = populatedMessage.toObject();
         finalMessage.tempId = tempId;
 
-        io.to(conversationId).emit("newMessage", populatedMessage.toObject());
+        io.to(conversationId).emit("newMessage", finalMessage);
       } catch (error) {
-        console.error(
-          "!!! Critical Error saving or broadcasting message:",
-          error
-        );
-        socket.emit("messageError", {
-          error: "Could not send message.",
-          details: error.message,
-          tempId: data.tempId,
-        });
+        console.error("!!! Critical Error:", error);
       }
     });
 
     socket.on("typing", (data) => {
       if (data.conversationId) {
-        socket.to(data.conversationId).emit("userTyping", { user: data.user });
+        socket.to(data.conversationId).emit("userTyping", {
+          id: socket.id,
+          name: data.name,
+        });
       }
     });
 
     socket.on("stopTyping", (data) => {
-      // data should include conversationId
       if (data.conversationId) {
-        socket.to(data.conversationId).emit("userStoppedTyping", {});
+        socket.to(data.conversationId).emit("userStoppedTyping", {
+          id: socket.id,
+          name: data.name,
+        });
       }
     });
 

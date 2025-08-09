@@ -1,4 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
+import api from "../../../services/api";
+import { useNavigate } from "react-router-dom";
+import useAuth from "../../auth/hooks/useAuth";
 
 const MessageIcon = (props) => (
   <svg
@@ -61,6 +64,20 @@ const contentItemVariants = {
 };
 
 const UserProfilePopup = ({ user, show, onClose }) => {
+  const navigate = useNavigate();
+
+  const onClickMessage = async () => {
+    try {
+      const { data: conversation } = await api.post(`/conversations`, {
+        userId: user._id,
+      });
+      onClose();
+      navigate(`/chat/${conversation._id}`, { state: { conversation } });
+    } catch (error) {
+      console.error("Failed to start conversation:", error);
+    }
+  };
+
   return (
     <AnimatePresence>
       {show && user && (
@@ -95,7 +112,6 @@ const UserProfilePopup = ({ user, show, onClose }) => {
             >
               <motion.div
                 variants={contentItemVariants}
-                // Changed gradient to match the new theme
                 className="p-1 bg-gradient-to-tr from-teal-500 to-cyan-500 rounded-full"
               >
                 <img
@@ -126,7 +142,10 @@ const UserProfilePopup = ({ user, show, onClose }) => {
                 variants={contentItemVariants}
                 className="flex space-x-4 mt-6 w-full"
               >
-                <button className="flex-1 bg-teal-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center space-x-2 hover:bg-teal-700 transition-colors">
+                <button
+                  className="flex-1 bg-teal-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center space-x-2 hover:bg-teal-700 transition-colors"
+                  onClick={onClickMessage}
+                >
                   <MessageIcon className="h-5 w-5" />
                   <span>Message</span>
                 </button>

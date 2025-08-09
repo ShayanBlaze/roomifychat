@@ -67,7 +67,25 @@ const getUserConversations = async (req, res) => {
   }
 };
 
+const getConversationById = async (req, res) => {
+  try {
+    const conversation = await Conversation.findById(req.params.id)
+      .populate("participants", "name avatar");
+
+    if (!conversation) return res.status(404).json({ msg: "Conversation not found" });
+
+    if (!conversation.participants.some(p => p._id.equals(req.user.id))) {
+      return res.status(403).json({ msg: "Not authorized" });
+    }
+
+    res.json(conversation);
+  } catch (error) {
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
 module.exports = {
   createOrGetConversation,
   getUserConversations,
+  getConversationById
 };

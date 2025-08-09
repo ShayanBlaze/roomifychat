@@ -2,9 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import useAuth from "../hooks/useAuth";
 
-
 const SOCKET_URL = "http://localhost:3000";
-
 const SocketContext = createContext(null);
 
 export const useSocket = () => {
@@ -17,27 +15,21 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (token) {
-      const newSocket = io(SOCKET_URL, {
-        auth: { token },
-        transports: ["websocket", "polling"],
-      });
-
+      const newSocket = io(SOCKET_URL, { auth: { token } });
       setSocket(newSocket);
 
-      newSocket.on("connect", () =>
-        console.log("Socket connected via Provider:", newSocket.id)
-      );
-      newSocket.on("connect_error", (err) =>
-        console.error("Socket connection error:", err.message)
-      );
+      newSocket.on("connect", () => {
+        console.log("Socket connected successfully:", newSocket.id);
+      });
+
+      newSocket.on("disconnect", (reason) => {
+        console.log("Socket disconnected:", reason);
+        setSocket(null);
+      });
 
       return () => {
-        console.log("Disconnecting socket from provider...");
         newSocket.disconnect();
       };
-    } else if (socket) {
-      socket.disconnect();
-      setSocket(null);
     }
   }, [token]);
 

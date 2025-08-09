@@ -5,7 +5,6 @@ const {
   loginUser,
   getLoggedInUser,
 } = require("../controllers/authController");
-const authMiddleware = require("../middleware/authMiddleware");
 
 // @route   POST api/v1/auth/register
 // @desc    Register a user
@@ -20,6 +19,6 @@ router.post("/login", loginUser);
 // @route   GET api/v1/auth/me
 // @desc    Get current user
 // @access  Private
-router.get("/me", authMiddleware, getLoggedInUser);
+router.get("/me", getLoggedInUser);
 
 module.exports = router;

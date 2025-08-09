@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { AnimatePresence } from "framer-motion";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router-dom";
 
 import useAuth from "../../auth/hooks/useAuth";
 import { useChat } from "../hooks/useChat";
@@ -15,6 +15,42 @@ import api from "../../../services/api";
 const ChatPage = () => {
   const { onMenuClick } = useOutletContext();
   const { user } = useAuth();
+  const { conversationId } = useParams();
+  const [headerDetails, setHeaderDetails] = useState({
+    title: "Loading...",
+    avatar: null,
+  });
+
+  useEffect(() => {
+    const getHeaderDetails = async () => {
+      if (conversationId === "general") {
+        setHeaderDetails({ title: "# general", avatar: null });
+        return;
+      }
+
+      try {
+        const { data: conversation } = await api.get(
+          `/conversations/${conversationId}`
+        );
+        const otherParticipant = conversation.participants.find(
+          (p) => p._id !== user._id
+        );
+        if (otherParticipant) {
+          setHeaderDetails({
+            title: otherParticipant.name,
+            avatar: otherParticipant.avatar,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch header details", error);
+        setHeaderDetails({ title: "Private Chat", avatar: null });
+      }
+    };
+
+    if (user && conversationId) {
+      getHeaderDetails();
+    }
+  }, [conversationId, user]);
 
   const {
     messages,
@@ -23,7 +59,7 @@ const ChatPage = () => {
     sendMessage,
     emitTyping,
     emitStopTyping,
-  } = useChat();
+  } = useChat({ conversationId });
 
   const [isUploading, setIsUploading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
@@ -115,10 +151,13 @@ const ChatPage = () => {
   };
 
   return (
-    // The only change is here: bg-gray-900
     <div className="flex h-full flex-1 flex-col bg-gray-900 font-sans text-white">
-      <ChatHeader typingUsers={typingUsers} onMenuClick={onMenuClick} />
-
+      <ChatHeader
+        title={headerDetails.title}
+        avatar={headerDetails.avatar}
+        typingUsers={typingUsers}
+        onMenuClick={onMenuClick}
+      />
       <MessageList
         messages={messages}
         user={user}
