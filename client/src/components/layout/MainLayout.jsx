@@ -350,7 +350,7 @@ const MainLayout = () => {
   return (
     <div className="flex h-screen w-full bg-gray-900 text-gray-300">
       {/* Sidebar: Always visible on desktop */}
-      <aside className="hidden md:flex flex-col w-64 h-full bg-gray-800/50 border-r border-gray-700 p-4">
+      <aside className="hidden md:flex flex-col w-80 h-full bg-gray-800/50 border-r border-gray-700 p-4">
         <SidebarContent />
       </aside>
 

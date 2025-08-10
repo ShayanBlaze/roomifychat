@@ -4,9 +4,10 @@ const {
   createOrGetConversation,
   getUserConversations,
   getConversationById,
+  deleteConversation,
 } = require("../controllers/conversationController");
 
 router.route("/").post(createOrGetConversation).get(getUserConversations);
-router.route("/:id").get(getConversationById);
+router.route("/:id").get(getConversationById).delete(deleteConversation);
 
 module.exports = router;

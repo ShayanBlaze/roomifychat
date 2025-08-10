@@ -67,18 +67,20 @@ const getUserConversations = async (req, res) => {
   }
 };
 
-
 // @desc    Get a conversation by ID
 // @route   GET /api/v1/conversations/:id
 // @access  Private
 const getConversationById = async (req, res) => {
   try {
-    const conversation = await Conversation.findById(req.params.id)
-      .populate("participants", "name avatar");
+    const conversation = await Conversation.findById(req.params.id).populate(
+      "participants",
+      "name avatar"
+    );
 
-    if (!conversation) return res.status(404).json({ msg: "Conversation not found" });
+    if (!conversation)
+      return res.status(404).json({ msg: "Conversation not found" });
 
-    if (!conversation.participants.some(p => p._id.equals(req.user.id))) {
+    if (!conversation.participants.some((p) => p._id.equals(req.user.id))) {
       return res.status(403).json({ msg: "Not authorized" });
     }
 
@@ -88,8 +90,38 @@ const getConversationById = async (req, res) => {
   }
 };
 
+// @desc    Delete a conversation by ID
+// @route   DELETE /api/v1/conversations/:id
+// @access  Private
+const deleteConversation = async (req, res) => {
+  try {
+    const conversationId = req.params.id;
+    const currentUserId = req.user.id;
+
+    const conversation = await Conversation.findById(conversationId);
+
+    if (!conversation) {
+      return res.status(404).json({ message: "Conversation not found." });
+    }
+
+    if (!conversation.participants.includes(currentUserId)) {
+      return res
+        .status(403)
+        .json({ message: "User not authorized to delete this conversation." });
+    }
+
+    await conversation.deleteOne();
+
+    res.status(200).json({ message: "Conversation deleted successfully." });
+  } catch (error) {
+    console.error("Error in deleteConversation:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
 module.exports = {
   createOrGetConversation,
   getUserConversations,
-  getConversationById
+  getConversationById,
+  deleteConversation,
 };
