@@ -20,3 +20,11 @@ body {
     animation: fadeInScale 0.3s ease-out forwards;
   }
 }
+
+img.emoji {
+  display: inline-block;
+  height: 1.3em;
+  width: 1.3em;
+  margin: 0 0.05em 0 0.1em;
+  vertical-align: -0.25em;
+}

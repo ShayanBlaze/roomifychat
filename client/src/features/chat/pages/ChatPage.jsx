@@ -123,7 +123,7 @@ const ChatPage = () => {
 
       <MessageInput
         newMessage={newMessage}
-        handleTyping={handleTyping}
+        setNewMessage={setNewMessage}
         handleSendMessage={handleSendMessage}
         handleFileChange={handleFileChange}
         isUploading={isUploading}

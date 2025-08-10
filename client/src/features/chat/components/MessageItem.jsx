@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
+import twemoji from "twemoji";
 
-// Helper function to format time
 const formatTime = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
@@ -9,14 +9,29 @@ const formatTime = (dateString) => {
   return `${hours}:${minutes}`;
 };
 
-// --- START: Final, robust RTL detection logic ---
 const isRTL = (text) => {
   if (!text) return false;
   const rtlRegex = /[\u0600-\u06FF]/;
-  // Base the direction on the first non-space character
   return rtlRegex.test(text.trim().charAt(0));
 };
-// --- END: RTL detection logic ---
+
+const RenderParsedText = ({ content }) => {
+  const isRtl = isRTL(content);
+  const parsedHtml = twemoji.parse(content, {
+    folder: "svg",
+    ext: ".svg",
+  });
+
+  return (
+    <p
+      className={`text-sm sm:text-base break-words ${
+        isRtl ? "text-right" : "text-left"
+      }`}
+      dir={isRtl ? "rtl" : "ltr"}
+      dangerouslySetInnerHTML={{ __html: parsedHtml }}
+    />
+  );
+};
 
 const MessageItem = ({
   msg,
@@ -74,14 +89,7 @@ const MessageItem = ({
       ) : (
         <>
           <div className="pb-4">
-            <p
-              className={`text-sm sm:text-base break-words ${
-                isRtl ? "text-right" : "text-left"
-              }`}
-              dir={isRtl ? "rtl" : "ltr"}
-            >
-              {msg.content}
-            </p>
+            <RenderParsedText content={msg.content} />
           </div>
           <div className="absolute bottom-1.5 right-3 flex items-center gap-1.5 text-xs text-cyan-100/90">
             <span>{formatTime(msg.createdAt)}</span>
@@ -118,14 +126,7 @@ const MessageItem = ({
       ) : (
         <>
           <div className="pb-4">
-            <p
-              className={`text-sm sm:text-base break-words ${
-                isRtl ? "text-right" : "text-left"
-              }`}
-              dir={isRtl ? "rtl" : "ltr"}
-            >
-              {msg.content}
-            </p>
+            <RenderParsedText content={msg.content} />
           </div>
           <div className="absolute bottom-1.5 right-3 flex items-center gap-1.5 text-xs text-gray-400">
             <span>{formatTime(msg.createdAt)}</span>
