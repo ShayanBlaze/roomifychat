@@ -58,7 +58,7 @@ const AuthProvider = ({ children }) => {
     user,
     token,
     loading,
-    isAuthenticated: !!user,
+    isAuthenticated: !!token,
     conversations,
     login,
     logout,

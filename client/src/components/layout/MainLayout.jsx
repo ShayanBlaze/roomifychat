@@ -93,6 +93,15 @@ const SidebarContent = ({ onLinkClick }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-gray-400">
+        <div className="w-8 h-8 border-4 border-t-transparent border-cyan-400 rounded-full animate-spin"></div>
+        <p className="mt-4 text-sm">Loading User...</p>
+      </div>
+    );
+  }
+
   const handleLogout = () => {
     onLinkClick?.();
     logout();
