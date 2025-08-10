@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useParams } from "react-router-dom";
 
@@ -10,6 +10,7 @@ import MessageInput from "../components/MessageInput";
 import ImageModal from "../components/ImageModal";
 import UserProfilePopup from "../components/UserProfilePopup";
 import api from "../../../services/api";
+import { groupMessagesByDate } from "../../../utils/messageUtil";
 
 const ChatPage = () => {
   const { user } = useAuth();
@@ -24,6 +25,9 @@ const ChatPage = () => {
   const typingTimeoutRef = useRef(null);
   const [isPopupVisible, setPopupVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const messagesWithDateSeparators = useMemo(() => {
+    return groupMessagesByDate(messages);
+  }, [messages]);
 
   if (!user) {
     return (
@@ -110,7 +114,7 @@ const ChatPage = () => {
   return (
     <div className="flex flex-1 flex-col min-h-0">
       <MessageList
-        messages={messages}
+        messages={messagesWithDateSeparators}
         user={user}
         onImageClick={setSelectedImage}
         messagesEndRef={messagesEndRef}
