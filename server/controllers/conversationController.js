@@ -67,6 +67,10 @@ const getUserConversations = async (req, res) => {
   }
 };
 
+
+// @desc    Get a conversation by ID
+// @route   GET /api/v1/conversations/:id
+// @access  Private
 const getConversationById = async (req, res) => {
   try {
     const conversation = await Conversation.findById(req.params.id)

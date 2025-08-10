@@ -68,6 +68,24 @@ const initializeSocket = (io) => {
                 populatedConvo
               );
             }
+
+            const updatedConversation = await Conversation.findByIdAndUpdate(
+              conversationId,
+              { lastMessage: savedMessage._id },
+              { new: true }
+            )
+              .populate("participants", "name avatar")
+              .populate({
+                path: "lastMessage",
+                populate: { path: "sender", select: "name" },
+              });
+
+            if (updatedConversation) {
+              io.to(conversationId).emit(
+                "conversation_updated",
+                updatedConversation
+              );
+            }
           }
         }
 

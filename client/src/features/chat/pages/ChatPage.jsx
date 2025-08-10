@@ -1,11 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
-import { useOutletContext, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 import useAuth from "../../auth/hooks/useAuth";
 import { useChat } from "../hooks/useChat";
 
-import ChatHeader from "../components/ChatHeader";
 import MessageList from "../components/MessageList";
 import MessageInput from "../components/MessageInput";
 import ImageModal from "../components/ImageModal";
@@ -13,53 +12,11 @@ import UserProfilePopup from "../components/UserProfilePopup";
 import api from "../../../services/api";
 
 const ChatPage = () => {
-  const { onMenuClick } = useOutletContext();
   const { user } = useAuth();
   const { conversationId } = useParams();
-  const [headerDetails, setHeaderDetails] = useState({
-    title: "Loading...",
-    avatar: null,
-  });
 
-  useEffect(() => {
-    const getHeaderDetails = async () => {
-      if (conversationId === "general") {
-        setHeaderDetails({ title: "# general", avatar: null });
-        return;
-      }
-
-      try {
-        const { data: conversation } = await api.get(
-          `/conversations/${conversationId}`
-        );
-        const otherParticipant = conversation.participants.find(
-          (p) => p._id !== user._id
-        );
-        if (otherParticipant) {
-          setHeaderDetails({
-            title: otherParticipant.name,
-            avatar: otherParticipant.avatar,
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch header details", error);
-        setHeaderDetails({ title: "Private Chat", avatar: null });
-      }
-    };
-
-    if (user && conversationId) {
-      getHeaderDetails();
-    }
-  }, [conversationId, user]);
-
-  const {
-    messages,
-    typingUsers,
-    messagesEndRef,
-    sendMessage,
-    emitTyping,
-    emitStopTyping,
-  } = useChat({ conversationId });
+  const { messages, messagesEndRef, sendMessage, emitTyping, emitStopTyping } =
+    useChat({ conversationId });
 
   const [isUploading, setIsUploading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
@@ -151,13 +108,7 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex h-full flex-1 flex-col bg-gray-900 font-sans text-white">
-      <ChatHeader
-        title={headerDetails.title}
-        avatar={headerDetails.avatar}
-        typingUsers={typingUsers}
-        onMenuClick={onMenuClick}
-      />
+    <div className="flex flex-1 flex-col min-h-0">
       <MessageList
         messages={messages}
         user={user}

@@ -1,9 +1,16 @@
 import { useEffect, useState } from "react";
-import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
+import {
+  Outlet,
+  NavLink,
+  useNavigate,
+  useLocation,
+  useParams,
+} from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../../features/auth/hooks/useAuth";
 import ConversationList from "../UI/ConversationList";
 import { useSocket } from "../../features/auth/context/SocketProvider";
+import api from "../../services/api";
 
 // --- icons ---
 const HomeIcon = () => (
@@ -159,7 +166,7 @@ const SidebarContent = ({ onLinkClick }) => {
           <ChatIcon />
           <span className="font-semibold">Chat</span>
         </NavLink>
-        <ConversationList />
+        <ConversationList onLinkClick={onLinkClick} />
       </nav>
       <div className="mt-auto">
         <button
@@ -171,6 +178,49 @@ const SidebarContent = ({ onLinkClick }) => {
         </button>
       </div>
     </div>
+  );
+};
+
+const Header = ({ typingUsers, onMenuClick, title, avatar }) => {
+  const getTypingText = () => {
+    if (!typingUsers || typingUsers.length === 0) return "";
+    const names = typingUsers.map((u) => u.name);
+    if (names.length === 1) return `${names[0]} is typing...`;
+    if (names.length === 2) return `${names[0]} and ${names[1]} are typing...`;
+    return "Several people are typing...";
+  };
+
+  return (
+    <header className="flex shrink-0 items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
+      <button onClick={onMenuClick} className="p-2 text-white md:hidden">
+        <MenuIcon />
+      </button>
+
+      <div className="flex items-center flex-grow md:ml-0 ml-4 gap-3">
+        {avatar && (
+          <img src={avatar} alt={title} className="w-10 h-10 rounded-full" />
+        )}
+        <div>
+          <h1 className="text-lg sm:text-xl font-bold text-white">{title}</h1>
+          <div className="h-5 text-xs sm:text-sm text-cyan-400">
+            <AnimatePresence>
+              {typingUsers && typingUsers.length > 0 && (
+                <motion.p
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.3 }}
+                  className="font-semibold"
+                >
+                  {getTypingText()}
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+      <div className="w-8 h-8 md:hidden"></div>
+    </header>
   );
 };
 
@@ -187,9 +237,67 @@ const MobileHeader = ({ onMenuClick, title }) => (
 const MainLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-
   const socket = useSocket();
-  const { setConversations } = useAuth();
+  const { setConversations, user } = useAuth();
+  const { conversationId } = useParams();
+
+  const [headerDetails, setHeaderDetails] = useState({ title: "Dashboard" });
+  const [typingUsers, setTypingUsers] = useState([]);
+
+  useEffect(() => {
+    const getHeaderDetails = async () => {
+      const pathname = location.pathname;
+      if (pathname.startsWith("/chat/") && conversationId) {
+        if (conversationId === "general") {
+          setHeaderDetails({ title: "# general", avatar: null });
+        } else {
+          try {
+            const { data: conversation } = await api.get(
+              `/conversations/${conversationId}`
+            );
+            const otherParticipant = conversation.participants.find(
+              (p) => p._id !== user._id
+            );
+            if (otherParticipant) {
+              setHeaderDetails({
+                title: otherParticipant.name,
+                avatar: otherParticipant.avatar,
+              });
+            }
+          } catch (error) {
+            setHeaderDetails({ title: "Private Chat", avatar: null });
+            console.error("Failed to fetch header details", error);
+          }
+        }
+      } else if (pathname.startsWith("/profile")) {
+        setHeaderDetails({ title: "Profile", avatar: null });
+      } else {
+        setHeaderDetails({ title: "Dashboard", avatar: null });
+      }
+    };
+
+    if (user) {
+      getHeaderDetails();
+    }
+  }, [location.pathname, conversationId, user]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleUserTyping = (data) => {
+      setTypingUsers((prev) => [...prev.filter((u) => u.id !== data.id), data]);
+    };
+    const handleUserStoppedTyping = (data) => {
+      setTypingUsers((prev) => prev.filter((u) => u.id !== data.id));
+    };
+
+    socket.on("userTyping", handleUserTyping);
+    socket.on("userStoppedTyping", handleUserStoppedTyping);
+
+    return () => {
+      socket.off("userTyping", handleUserTyping);
+      socket.off("userStoppedTyping", handleUserStoppedTyping);
+    };
+  }, [socket]);
 
   useEffect(() => {
     if (!socket) {
@@ -218,18 +326,26 @@ const MainLayout = () => {
       });
     };
 
+    const handleConversationUpdated = (updatedConvo) => {
+      console.log("✅ Conversation updated:", updatedConvo);
+      setConversations((prevConvos) => {
+        const newConvos = prevConvos.map((convo) =>
+          convo._id === updatedConvo._id ? updatedConvo : convo
+        );
+        return newConvos.sort(
+          (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+        );
+      });
+    };
+
     socket.on("conversation_started", handleNewConversation);
+    socket.on("conversation_updated", handleConversationUpdated);
 
     return () => {
       socket.off("conversation_started", handleNewConversation);
+      socket.off("conversation_updated", handleConversationUpdated);
     };
   }, [socket, setConversations]);
-
-  const getPageTitle = (pathname) => {
-    if (pathname.startsWith("/profile")) return "Profile";
-    if (pathname.startsWith("/chat")) return "Chat";
-    return "Dashboard";
-  };
 
   return (
     <div className="flex h-screen w-full bg-gray-900 text-gray-300">
@@ -261,13 +377,15 @@ const MainLayout = () => {
         )}
       </AnimatePresence>
 
-      <main className="flex-grow h-full flex flex-col overflow-y-auto">
-        {location.pathname !== "/chat" && (
-          <MobileHeader
-            onMenuClick={() => setIsMobileMenuOpen(true)}
-            title={getPageTitle(location.pathname)}
-          />
-        )}
+      <main className="flex-grow h-full flex flex-col overflow-hidden">
+        <Header
+          onMenuClick={() => setIsMobileMenuOpen(true)}
+          title={headerDetails.title}
+          avatar={headerDetails.avatar}
+          typingUsers={
+            location.pathname.startsWith("/chat/") ? typingUsers : []
+          }
+        />
         <Outlet context={{ onMenuClick: () => setIsMobileMenuOpen(true) }} />
       </main>
     </div>
