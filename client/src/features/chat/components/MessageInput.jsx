@@ -52,7 +52,11 @@ const MessageInput = ({
           htmlFor="file-input"
           className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
         >
-          <ImAttachment />
+          {isUploading ? (
+            <div className="w-5 h-5 border-2 border-t-transparent border-cyan-400 rounded-full animate-spin"></div>
+          ) : (
+            <ImAttachment />
+          )}
         </label>
         <input
           id="file-input"
