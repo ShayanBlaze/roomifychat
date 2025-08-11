@@ -1,35 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
-import api from "../../../services/api";
 import { useNavigate } from "react-router-dom";
-import useAuth from "../../auth/hooks/useAuth";
+import { IoClose, IoSend } from "react-icons/io5";
 
-const MessageIcon = (props) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    {...props}
-  >
-    <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-  </svg>
-);
-
-const CloseIcon = (props) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    strokeWidth={1.5}
-    stroke="currentColor"
-    {...props}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M6 18L18 6M6 6l12 12"
-    />
-  </svg>
-);
+import api from "../../../services/api";
 
 const backdropVariants = {
   visible: { opacity: 1 },
@@ -101,7 +74,7 @@ const UserProfilePopup = ({ user, show, onClose }) => {
               whileHover={{ scale: 1.1, rotate: 90 }}
               whileTap={{ scale: 0.9 }}
             >
-              <CloseIcon className="h-6 w-6" />
+              <IoClose className="h-6 w-6" />
             </motion.button>
 
             <motion.div
@@ -146,7 +119,7 @@ const UserProfilePopup = ({ user, show, onClose }) => {
                   className="flex-1 bg-teal-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center space-x-2 hover:bg-teal-700 transition-colors"
                   onClick={onClickMessage}
                 >
-                  <MessageIcon className="h-5 w-5" />
+                  <IoSend className="h-5 w-5" />
                   <span>Message</span>
                 </button>
               </motion.div>

@@ -1,14 +1,15 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { AnimatePresence } from "framer-motion";
-import { useParams } from "react-router-dom";
-
-import useAuth from "../../auth/hooks/useAuth";
-import { useChat } from "../hooks/useChat";
+import { useParams, useOutletContext } from "react-router-dom";
 
 import MessageList from "../components/MessageList";
 import MessageInput from "../components/MessageInput";
 import ImageModal from "../components/ImageModal";
 import UserProfilePopup from "../components/UserProfilePopup";
+
+import useAuth from "../../auth/hooks/useAuth";
+import { useChat } from "../hooks/useChat";
+
 import api from "../../../services/api";
 import { groupMessagesByDate } from "../../../utils/messageUtil";
 
@@ -16,8 +17,16 @@ const ChatPage = () => {
   const { user } = useAuth();
   const { conversationId } = useParams();
 
-  const { messages, messagesEndRef, sendMessage, emitTyping, emitStopTyping } =
-    useChat({ conversationId });
+  const {
+    messages,
+    messagesEndRef,
+    sendMessage,
+    emitTyping,
+    emitStopTyping,
+    typingUsers,
+  } = useChat({ conversationId });
+
+  const { setTypingUsers } = useOutletContext();
 
   const [isUploading, setIsUploading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
@@ -28,6 +37,17 @@ const ChatPage = () => {
   const messagesWithDateSeparators = useMemo(() => {
     return groupMessagesByDate(messages);
   }, [messages]);
+
+  useEffect(() => {
+    if (setTypingUsers) {
+      setTypingUsers(typingUsers);
+    }
+    return () => {
+      if (setTypingUsers) {
+        setTypingUsers([]);
+      }
+    };
+  }, [typingUsers, setTypingUsers]);
 
   if (!user) {
     return (
@@ -124,6 +144,7 @@ const ChatPage = () => {
       <MessageInput
         newMessage={newMessage}
         setNewMessage={setNewMessage}
+        onTyping={handleTyping}
         handleSendMessage={handleSendMessage}
         handleFileChange={handleFileChange}
         isUploading={isUploading}

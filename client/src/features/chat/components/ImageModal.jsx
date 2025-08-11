@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { CloseIcon } from "./ChatIcons";
+import { IoClose } from "react-icons/io5";
 
 const ImageModal = ({ imageUrl, onClose }) => {
   return (
@@ -17,7 +17,7 @@ const ImageModal = ({ imageUrl, onClose }) => {
         className="absolute top-4 right-4 text-white hover:text-gray-300"
         onClick={onClose}
       >
-        <CloseIcon />
+        <IoClose />
       </motion.button>
       <motion.img
         layoutId={`chat-image-${imageUrl}`}

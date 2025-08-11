@@ -4,17 +4,7 @@ import api from "../../services/api";
 import { useState } from "react";
 import { useRef } from "react";
 import { useEffect } from "react";
-
-const ThreeDotsIcon = (props) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 20 20"
-    fill="currentColor"
-    {...props}
-  >
-    <path d="M10 3a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM10 8.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM11.5 15.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" />
-  </svg>
-);
+import { BsThreeDotsVertical, BsTrash } from "react-icons/bs";
 
 const TrashIcon = (props) => (
   <svg
@@ -146,25 +136,25 @@ const ConversationList = ({ onLinkClick }) => {
               >
                 <button
                   onClick={(e) => handleMenuToggle(e, convo._id)}
-                  className="p-1.5 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"
+                  className="p-1.5 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white cursor-pointer"
                   aria-label="More options"
                 >
-                  <ThreeDotsIcon className="h-5 w-5" />
+                  <BsThreeDotsVertical className="h-5 w-5" />
                 </button>
 
                 {openMenuId === convo._id && (
                   <div
-                    className="absolute right-4 mt-2 w-48 origin-top-right rounded-md bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20"
+                    className="absolute right-4 mt-2 w-48 origin-top-right rounded-md bg-gray-800 shadow-lg ring-opacity-5 focus:outline-none z-20"
                     role="menu"
                     aria-orientation="vertical"
                   >
                     <div className="py-1" role="none">
                       <button
                         onClick={() => handleDelete(convo._id)}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-gray-700"
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-gray-700 cursor-pointer"
                         role="menuitem"
                       >
-                        <TrashIcon className="h-5 w-5" />
+                        <BsTrash className="h-5 w-5" />
                         <span>Delete</span>
                       </button>
                     </div>

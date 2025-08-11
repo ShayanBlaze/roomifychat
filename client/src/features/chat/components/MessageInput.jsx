@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { SendIcon, AttachmentIcon } from "./ChatIcons";
+import { FiSend } from "react-icons/fi";
+import { ImAttachment } from "react-icons/im";
 import EmojiPicker, { EmojiStyle } from "emoji-picker-react";
 
 const isRTL = (text) => {
@@ -15,6 +16,7 @@ const MessageInput = ({
   handleSendMessage,
   handleFileChange,
   isUploading,
+  onTyping,
 }) => {
   const isRtl = isRTL(newMessage);
   const [showPicker, setShowPicker] = useState(false);
@@ -50,7 +52,7 @@ const MessageInput = ({
           htmlFor="file-input"
           className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
         >
-          <AttachmentIcon />
+          <ImAttachment />
         </label>
         <input
           id="file-input"
@@ -73,7 +75,7 @@ const MessageInput = ({
         <input
           type="text"
           value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
+          onChange={onTyping}
           placeholder="start typing..."
           className={`w-full bg-transparent text-white placeholder-gray-500 outline-none ${
             isRtl ? "text-right" : "text-left"
@@ -89,7 +91,7 @@ const MessageInput = ({
             whileTap={{ scale: 0.9 }}
             className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 text-white transition-all"
           >
-            <SendIcon />
+            <FiSend />
           </motion.button>
         )}
       </form>
