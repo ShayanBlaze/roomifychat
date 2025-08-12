@@ -9,7 +9,14 @@ const getConversationMessages = async (req, res) => {
     if (conversationId === "general") {
       const messages = await Message.find({ conversationId: "general" })
         .sort({ createdAt: 1 })
-        .populate("sender", "name avatar");
+        .populate("sender", "name avatar")
+        .populate({
+          path: "replyTo",
+          populate: {
+            path: "sender",
+            select: "name avatar",
+          },
+        });
       return res.json(messages);
     }
 
@@ -27,7 +34,14 @@ const getConversationMessages = async (req, res) => {
 
     const messages = await Message.find({ conversationId: conversationId })
       .sort({ createdAt: 1 })
-      .populate("sender", "name avatar");
+      .populate("sender", "name avatar")
+      .populate({
+        path: "replyTo",
+        populate: {
+          path: "sender",
+          select: "name avatar",
+        },
+      });
 
     res.json(messages);
   } catch (error) {
@@ -97,5 +111,5 @@ const deleteMessage = async (req, res) => {
 module.exports = {
   getConversationMessages,
   editMessage,
-  deleteMessage
+  deleteMessage,
 };

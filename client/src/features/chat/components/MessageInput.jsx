@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { FiSend } from "react-icons/fi";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { FiSend, FiX } from "react-icons/fi";
 import { ImAttachment } from "react-icons/im";
 import EmojiPicker, { EmojiStyle } from "emoji-picker-react";
 
@@ -15,11 +15,20 @@ const MessageInput = ({
   setNewMessage,
   handleSendMessage,
   handleFileChange,
+  replyingTo,
+  editingMessage,
+  onCancelAction,
   isUploading,
   onTyping,
 }) => {
   const isRtl = isRTL(newMessage);
   const [showPicker, setShowPicker] = useState(false);
+
+  useEffect(() => {
+    if (editingMessage) {
+      setNewMessage(editingMessage.content);
+    }
+  }, [editingMessage, setNewMessage]);
 
   const handleEmojiClick = (emojiObject) => {
     setNewMessage((prev) => prev + emojiObject.emoji);
@@ -28,6 +37,34 @@ const MessageInput = ({
 
   return (
     <footer className="shrink-0 bg-gray-800/50 backdrop-blur-sm p-2 sm:p-4">
+      <AnimatePresence>
+        {(replyingTo || editingMessage) && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="flex items-center justify-between p-2 mb-2 bg-gray-900/50 rounded-lg text-sm"
+          >
+            <div>
+              <p className="font-bold text-cyan-400">
+                {editingMessage
+                  ? "Editing Message"
+                  : `Replying to ${replyingTo.sender.name}`}
+              </p>
+              <p className="text-gray-300 truncate max-w-xs sm:max-w-md">
+                {editingMessage ? editingMessage.content : replyingTo.content}
+              </p>
+            </div>
+            <button
+              onClick={onCancelAction}
+              className="p-1 rounded-full hover:bg-gray-700"
+            >
+              <FiX className="h-5 w-5 text-gray-400" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {showPicker && (
         <div
           style={{

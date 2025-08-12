@@ -68,14 +68,27 @@ export const useChat = ({ conversationId }) => {
         prev.map((msg) => (msg._id === updatedMsg._id ? updatedMsg : msg))
       );
     };
+    const handleMessageEdited = (editedMessage) => {
+      setMessages((prev) =>
+        prev.map((msg) => (msg._id === editedMessage._id ? editedMessage : msg))
+      );
+    };
+
+    const handleMessageDeleted = ({ messageId }) => {
+      setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+    };
 
     socket.on("newMessage", handleNewMessage);
+    socket.on("messageEdited", handleMessageEdited);
+    socket.on("messageDeleted", handleMessageDeleted);
     socket.on("userTyping", handleUserTyping);
     socket.on("userStoppedTyping", handleUserStoppedTyping);
     socket.on("messageStatusUpdate", handleMessageStatusUpdate);
 
     return () => {
       socket.off("newMessage", handleNewMessage);
+      socket.off("messageEdited", handleMessageEdited);
+      socket.off("messageDeleted", handleMessageDeleted);
       socket.off("userTyping", handleUserTyping);
       socket.off("userStoppedTyping", handleUserStoppedTyping);
       socket.off("messageStatusUpdate", handleMessageStatusUpdate);
@@ -108,6 +121,7 @@ export const useChat = ({ conversationId }) => {
         sender: user,
         status: "sent",
         createdAt: new Date().toISOString(),
+        replyTo: messageData.replyTo || null,
       };
       setMessages((prev) => [...prev, optimisticMessage]);
 
@@ -116,7 +130,20 @@ export const useChat = ({ conversationId }) => {
         type: messageData.type,
         tempId: messageData.tempId,
         conversationId: conversationId,
+        replyTo: messageData.replyTo ? messageData.replyTo._id : null,
       });
+    }
+  };
+
+  const editMessage = (messageId, newContent) => {
+    if (socket) {
+      socket.emit("editMessage", { messageId, newContent });
+    }
+  };
+
+  const deleteMessage = (messageId) => {
+    if (socket) {
+      socket.emit("deleteMessage", { messageId });
     }
   };
 
@@ -147,5 +174,7 @@ export const useChat = ({ conversationId }) => {
     sendMessage,
     emitTyping,
     emitStopTyping,
+    editMessage,
+    deleteMessage,
   };
 };

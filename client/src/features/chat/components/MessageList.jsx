@@ -16,6 +16,8 @@ const MessageList = ({
   onImageClick,
   messagesEndRef,
   onUserAvatarClick,
+  onOpenMenu,
+  onScrollToReply,
 }) => {
   return (
     <main className="flex-1 space-y-6 overflow-y-auto p-3 sm:p-4 md:p-6">
@@ -33,6 +35,8 @@ const MessageList = ({
               user={user}
               onImageClick={onImageClick}
               onUserAvatarClick={onUserAvatarClick}
+              onOpenMenu={onOpenMenu}
+              onScrollToReply={onScrollToReply}
             />
           );
         })}

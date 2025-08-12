@@ -6,6 +6,7 @@ import MessageList from "../components/MessageList";
 import MessageInput from "../components/MessageInput";
 import ImageModal from "../components/ImageModal";
 import UserProfilePopup from "../components/UserProfilePopup";
+import MessageContextMenu from "../components/MessageContextMenu";
 
 import useAuth from "../../auth/hooks/useAuth";
 import { useChat } from "../hooks/useChat";
@@ -20,6 +21,8 @@ const ChatPage = () => {
   const {
     messages,
     messagesEndRef,
+    editMessage,
+    deleteMessage,
     sendMessage,
     emitTyping,
     emitStopTyping,
@@ -34,6 +37,16 @@ const ChatPage = () => {
   const typingTimeoutRef = useRef(null);
   const [isPopupVisible, setPopupVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
+  const [menuState, setMenuState] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
+    message: null,
+  });
+
   const messagesWithDateSeparators = useMemo(() => {
     return groupMessagesByDate(messages);
   }, [messages]);
@@ -59,18 +72,25 @@ const ChatPage = () => {
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (newMessage.trim() && user) {
-      const tempId = Date.now().toString();
+    if (!newMessage.trim() || !user) return;
+
+    if (editingMessage) {
+      editMessage(editingMessage._id, newMessage);
+    } else {
       sendMessage({
-        tempId,
+        tempId: Date.now().toString(),
         content: newMessage,
         type: "text",
         sender: user,
+        replyTo: replyingTo,
       });
-      setNewMessage("");
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      emitStopTyping(user.name);
     }
+
+    setNewMessage("");
+    setReplyingTo(null);
+    setEditingMessage(null);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    emitStopTyping(user.name);
   };
 
   const handleTyping = (e) => {
@@ -131,6 +151,50 @@ const ChatPage = () => {
     setSelectedUser(null);
   };
 
+  const handleOpenMenu = (event, message) => {
+    event.preventDefault();
+    setMenuState({
+      visible: true,
+      x: event.pageX,
+      y: event.pageY,
+      message: message,
+    });
+  };
+
+  const handleCloseMenu = () =>
+    setMenuState({ visible: false, x: 0, y: 0, message: null });
+
+  const handleScrollToMessage = (messageId) => {
+    const element = document.getElementById(`message-${messageId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      element.classList.add(
+        "bg-cyan-900/50",
+        "transition-all",
+        "duration-1000",
+        "rounded-lg"
+      );
+      setTimeout(
+        () => element.classList.remove("bg-cyan-900/50", "rounded-lg"),
+        1500
+      );
+    }
+  };
+
+  const handleCancelAction = () => {
+    setReplyingTo(null);
+    setEditingMessage(null);
+    setNewMessage("");
+  };
+
+  useEffect(() => {
+    if (menuState.visible) {
+      const handleClickOutside = () => handleCloseMenu();
+      window.addEventListener("click", handleClickOutside);
+      return () => window.removeEventListener("click", handleClickOutside);
+    }
+  }, [menuState.visible]);
+
   return (
     <div className="flex flex-1 flex-col min-h-0">
       <MessageList
@@ -138,6 +202,8 @@ const ChatPage = () => {
         user={user}
         onImageClick={setSelectedImage}
         messagesEndRef={messagesEndRef}
+        onOpenMenu={handleOpenMenu}
+        onScrollToReply={handleScrollToMessage}
         onUserAvatarClick={handleUserClick}
       />
 
@@ -148,6 +214,9 @@ const ChatPage = () => {
         handleSendMessage={handleSendMessage}
         handleFileChange={handleFileChange}
         isUploading={isUploading}
+        replyingTo={replyingTo}
+        editingMessage={editingMessage}
+        onCancelAction={handleCancelAction}
       />
 
       <AnimatePresence>
@@ -164,6 +233,20 @@ const ChatPage = () => {
         show={isPopupVisible}
         onClose={handleClosePopup}
       />
+
+      <AnimatePresence>
+        {menuState.visible && (
+          <MessageContextMenu
+            message={menuState.message}
+            position={{ x: menuState.x, y: menuState.y }}
+            onClose={handleCloseMenu}
+            onReply={setReplyingTo}
+            onEdit={setEditingMessage}
+            onDelete={deleteMessage}
+            isSentByMe={menuState.message?.sender._id === user._id}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
