@@ -39,6 +39,63 @@ const getConversationMessages = async (req, res) => {
   }
 };
 
+const editMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { content } = req.body;
+    const userId = req.user.id;
+
+    const message = await Message.findById(messageId);
+
+    if (!message) {
+      return res.status(404).json({ message: "Message not found." });
+    }
+
+    if (message.sender.toString() !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Forbidden: You can only edit your own messages." });
+    }
+
+    message.content = content;
+    message.isEdited = true;
+    const updatedMessage = await message.save();
+
+    res.json(updatedMessage);
+  } catch (error) {
+    console.error("Failed to edit message:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+const deleteMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user.id;
+
+    const message = await Message.findById(messageId);
+
+    if (!message) {
+      return res.status(404).json({ message: "Message not found." });
+    }
+
+    if (message.sender.toString() !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Forbidden: You can only delete your own messages." });
+    }
+
+    await Message.findByIdAndDelete(messageId);
+
+    res.status(204).send();
+  } catch (error) {
+    console.error("Failed to delete message:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
 module.exports = {
   getConversationMessages,
+  editMessage,
+  deleteMessage
 };

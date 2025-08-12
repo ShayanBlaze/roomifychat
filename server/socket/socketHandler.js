@@ -38,7 +38,7 @@ const initializeSocket = (io) => {
 
     socket.on("sendMessage", async (data) => {
       try {
-        const { content, type, tempId, conversationId } = data;
+        const { content, type, tempId, conversationId, replyTo } = data; // دریافت replyTo
         const senderId = socket.user.id;
 
         const message = new Message({
@@ -46,59 +46,79 @@ const initializeSocket = (io) => {
           type,
           sender: senderId,
           conversationId,
+          replyTo: replyTo || null,
         });
         const savedMessage = await message.save();
 
-        if (conversationId !== "general") {
-          const conversation = await Conversation.findById(conversationId);
-          if (conversation) {
-            const isFirstMessage = !conversation.lastMessage;
-            conversation.lastMessage = savedMessage._id;
-            await conversation.save();
-
-            if (isFirstMessage) {
-              const populatedConvo = await Conversation.findById(conversationId)
-                .populate("participants", "name avatar")
-                .populate({
-                  path: "lastMessage",
-                  populate: { path: "sender", select: "name" },
-                });
-              io.to(conversationId).emit(
-                "conversation_started",
-                populatedConvo
-              );
-            }
-
-            const updatedConversation = await Conversation.findByIdAndUpdate(
-              conversationId,
-              { lastMessage: savedMessage._id },
-              { new: true }
-            )
-              .populate("participants", "name avatar")
-              .populate({
-                path: "lastMessage",
-                populate: { path: "sender", select: "name" },
-              });
-
-            if (updatedConversation) {
-              io.to(conversationId).emit(
-                "conversation_updated",
-                updatedConversation
-              );
-            }
-          }
-        }
-
-        const populatedMessage = await Message.findById(
-          savedMessage._id
-        ).populate("sender", "name _id avatar");
+        const populatedMessage = await Message.findById(savedMessage._id)
+          .populate("sender", "name _id avatar")
+          .populate({
+            path: "replyTo",
+            populate: {
+              path: "sender",
+              select: "name",
+            },
+          });
 
         const finalMessage = populatedMessage.toObject();
         finalMessage.tempId = tempId;
 
         io.to(conversationId).emit("newMessage", finalMessage);
       } catch (error) {
-        console.error("!!! Critical Error:", error);
+        console.error("!!! Critical Error on sendMessage:", error);
+      }
+    });
+
+    socket.on("editMessage", async ({ messageId, newContent }) => {
+      try {
+        const userId = socket.user.id;
+        const message = await Message.findById(messageId);
+
+        if (!message || message.sender.toString() !== userId) {
+          console.error("Unauthorized edit attempt or message not found.");
+          return;
+        }
+
+        message.content = newContent;
+        message.isEdited = true;
+        await message.save();
+
+        const populatedMessage = await Message.findById(messageId)
+          .populate("sender", "name _id avatar")
+          .populate({
+            path: "replyTo",
+            populate: { path: "sender", select: "name" },
+          });
+
+        io.to(message.conversationId.toString()).emit(
+          "messageEdited",
+          populatedMessage
+        );
+      } catch (error) {
+        console.error("Error editing message:", error);
+      }
+    });
+
+    socket.on("deleteMessage", async ({ messageId }) => {
+      try {
+        const userId = socket.user.id;
+        const message = await Message.findById(messageId);
+
+        if (!message || message.sender.toString() !== userId) {
+          console.error("Unauthorized delete attempt or message not found.");
+          return;
+        }
+
+        const conversationId = message.conversationId.toString();
+
+        await Message.findByIdAndDelete(messageId);
+
+        io.to(conversationId).emit("messageDeleted", {
+          messageId,
+          conversationId,
+        });
+      } catch (error) {
+        console.error("Error deleting message:", error);
       }
     });
 

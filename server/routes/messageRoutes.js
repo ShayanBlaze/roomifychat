@@ -1,7 +1,13 @@
 const express = require("express");
 const router = express.Router();
-const { getConversationMessages } = require("../controllers/messageController");
+const {
+  getConversationMessages,
+  editMessage,
+  deleteMessage,
+} = require("../controllers/messageController");
 
-router.route("/:conversationId").get(getConversationMessages);
+router.get("/:conversationId", getConversationMessages);
+
+router.route("/:messageId").patch(editMessage).delete(deleteMessage);
 
 module.exports = router;
