@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import twemoji from "twemoji";
-import { FiCornerUpLeft, FiEdit2 } from "react-icons/fi";
+import { FiCornerUpLeft, FiEdit2, FiImage } from "react-icons/fi";
 
 const formatTime = (dateString) => {
   if (!dateString) return "";
@@ -34,34 +34,39 @@ const RenderParsedText = ({ content }) => {
   );
 };
 
-const ReplyPreview = ({ message, onScrollToReply }) => (
-  <motion.div
-    layout
-    initial={{ opacity: 0, y: -10, height: 0 }}
-    animate={{ opacity: 1, y: 0, height: "auto" }}
-    transition={{ type: "spring", stiffness: 300, damping: 30, duration: 0.2 }}
-    className="mb-2 pl-3 py-1.5 border-l-2 border-cyan-400 bg-black/20 rounded-r-lg cursor-pointer overflow-hidden"
-    onClick={(e) => {
-      e.stopPropagation();
-      onScrollToReply(message._id);
-    }}
-  >
-    <div className="flex items-center gap-2">
-      <FiCornerUpLeft className="text-cyan-400 shrink-0" />
-      <p className="font-bold text-sm text-cyan-300">
-        {message.sender?.name || "User"}
-      </p>
-    </div>
-    <p className="text-sm text-gray-300 truncate mt-1 ml-1 pl-5">
-      {message.content || "..."}
-    </p>
-  </motion.div>
-);
+const ReplyPreview = ({ message, onScrollToReply }) => {
+  const isImageReply = message.type === "image";
+  const replyContent = isImageReply ? "Image" : message.content || "...";
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+      className="mb-1.5 p-2 bg-black/25 rounded-lg cursor-pointer overflow-hidden backdrop-blur-sm"
+      onClick={(e) => {
+        e.stopPropagation();
+        onScrollToReply(message._id);
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <FiCornerUpLeft className="text-cyan-400 shrink-0 w-4 h-4" />
+        <p className="font-bold text-sm text-cyan-300 truncate">
+          {message.sender?.name || "User"}
+        </p>
+      </div>
+      <div className="flex items-center gap-2 mt-1 pl-6">
+        {isImageReply && <FiImage className="text-gray-400 shrink-0 w-4 h-4" />}
+        <p className="text-sm text-gray-300 truncate">{replyContent}</p>
+      </div>
+    </motion.div>
+  );
+};
 
 const MessageItem = ({
   msg,
   isSentByMe,
-  user,
   onImageClick,
   onUserAvatarClick,
   onOpenMenu,
@@ -71,7 +76,6 @@ const MessageItem = ({
     "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg";
 
   const senderAvatar = msg.sender?.avatar || defaultAvatar;
-  const myAvatar = user?.avatar || defaultAvatar;
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -89,7 +93,8 @@ const MessageItem = ({
 
   const SentMessageBubble = () => (
     <div
-      className={`max-w-[80%] sm:max-w-md md:max-w-lg rounded-3xl rounded-br-lg shadow-lg relative
+      onContextMenu={(e) => onOpenMenu(e, msg)}
+      className={`max-w-[80%] sm:max-w-md md:max-w-lg rounded-3xl rounded-br-lg shadow-lg relative cursor-pointer
         ${
           msg.type === "image"
             ? "p-1.5 bg-gradient-to-br from-teal-500 to-cyan-500"
@@ -106,7 +111,7 @@ const MessageItem = ({
             layoutId={`chat-image-${msg.content}`}
             src={msg.content}
             alt="Sent in chat"
-            className="max-w-full h-auto rounded-2xl cursor-pointer min-w-[120px]"
+            className="max-w-full h-auto rounded-2xl min-w-[120px]"
             onClick={() => onImageClick(msg.content)}
           />
           <div className="absolute bottom-3 right-3 bg-black/50 rounded-full px-2 py-0.5 flex items-center gap-1.5 text-xs text-white">
@@ -139,7 +144,8 @@ const MessageItem = ({
 
   const ReceivedMessageBubble = () => (
     <div
-      className={`max-w-[80%] sm:max-w-md md:max-w-lg rounded-3xl rounded-bl-lg shadow-lg relative
+      onContextMenu={(e) => onOpenMenu(e, msg)}
+      className={`max-w-[80%] sm:max-w-md md:max-w-lg rounded-3xl rounded-bl-lg shadow-lg relative cursor-pointer
         ${
           msg.type === "image"
             ? "p-0 bg-transparent"
@@ -155,7 +161,7 @@ const MessageItem = ({
             layoutId={`chat-image-${msg.content}`}
             src={msg.content}
             alt="Sent in chat"
-            className="max-w-full h-auto rounded-2xl cursor-pointer border-2 border-gray-700 min-w-[120px]"
+            className="max-w-full h-auto rounded-2xl border-2 border-gray-700 min-w-[120px]"
             onClick={() => onImageClick(msg.content)}
           />
           <div className="absolute bottom-2 right-2 bg-black/50 rounded-full px-2 py-0.5 flex items-center gap-1.5 text-xs text-white">
@@ -190,7 +196,6 @@ const MessageItem = ({
       exit="exit"
       className={`flex flex-col ${isSentByMe ? "items-end" : "items-start"}`}
       id={`message-${msg._id}`}
-      onContextMenu={(e) => onOpenMenu(e, msg)}
     >
       {!isSentByMe && (
         <div className="flex items-center gap-2 mb-1.5 ml-12">

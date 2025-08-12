@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { AnimatePresence } from "framer-motion";
 import MessageItem from "./MessageItem";
 
@@ -46,4 +47,4 @@ const MessageList = ({
   );
 };
 
-export default MessageList;
+export default memo(MessageList);

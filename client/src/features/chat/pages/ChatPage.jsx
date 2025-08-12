@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useEffect } from "react";
+import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useParams, useOutletContext } from "react-router-dom";
 
@@ -134,7 +134,7 @@ const ChatPage = () => {
     }
   };
 
-  const handleUserClick = async (userId) => {
+  const handleUserClick = useCallback(async (userId) => {
     if (!userId) return;
 
     try {
@@ -144,14 +144,14 @@ const ChatPage = () => {
     } catch (error) {
       console.error("Failed to fetch user profile:", error);
     }
-  };
+  }, []);
 
   const handleClosePopup = () => {
     setPopupVisible(false);
     setSelectedUser(null);
   };
 
-  const handleOpenMenu = (event, message) => {
+  const handleOpenMenu = useCallback((event, message) => {
     event.preventDefault();
     setMenuState({
       visible: true,
@@ -159,12 +159,14 @@ const ChatPage = () => {
       y: event.pageY,
       message: message,
     });
-  };
+  }, []);
 
-  const handleCloseMenu = () =>
-    setMenuState({ visible: false, x: 0, y: 0, message: null });
+  const handleCloseMenu = useCallback(
+    () => setMenuState({ visible: false, x: 0, y: 0, message: null }),
+    []
+  );
 
-  const handleScrollToMessage = (messageId) => {
+  const handleScrollToMessage = useCallback((messageId) => {
     const element = document.getElementById(`message-${messageId}`);
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -179,7 +181,7 @@ const ChatPage = () => {
         1500
       );
     }
-  };
+  }, []);
 
   const handleCancelAction = () => {
     setReplyingTo(null);
@@ -187,20 +189,24 @@ const ChatPage = () => {
     setNewMessage("");
   };
 
+  const handleImageClick = useCallback((imageUrl) => {
+    setSelectedImage(imageUrl);
+  }, []);
+
   useEffect(() => {
     if (menuState.visible) {
       const handleClickOutside = () => handleCloseMenu();
       window.addEventListener("click", handleClickOutside);
       return () => window.removeEventListener("click", handleClickOutside);
     }
-  }, [menuState.visible]);
+  }, [menuState.visible, handleCloseMenu]);
 
   return (
     <div className="flex flex-1 flex-col min-h-0">
       <MessageList
         messages={messagesWithDateSeparators}
         user={user}
-        onImageClick={setSelectedImage}
+        onImageClick={handleImageClick}
         messagesEndRef={messagesEndRef}
         onOpenMenu={handleOpenMenu}
         onScrollToReply={handleScrollToMessage}

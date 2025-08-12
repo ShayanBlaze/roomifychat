@@ -40,27 +40,28 @@ const MessageInput = ({
       <AnimatePresence>
         {(replyingTo || editingMessage) && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="flex items-center justify-between p-2 mb-2 bg-gray-900/50 rounded-lg text-sm"
+            initial={{ height: 0, opacity: 0, y: 10 }}
+            animate={{ height: "auto", opacity: 1, y: 0 }}
+            exit={{ height: 0, opacity: 0, y: 10 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="border-l-4 border-cyan-500 pl-3 pt-2 pb-1 mb-2 text-sm"
           >
-            <div>
-              <p className="font-bold text-cyan-400">
+            <div className="flex items-center justify-between">
+              <div className="font-bold text-cyan-400">
                 {editingMessage
                   ? "Editing Message"
                   : `Replying to ${replyingTo.sender.name}`}
-              </p>
-              <p className="text-gray-300 truncate max-w-xs sm:max-w-md">
-                {editingMessage ? editingMessage.content : replyingTo.content}
-              </p>
+              </div>
+              <button
+                onClick={onCancelAction}
+                className="p-1 rounded-full hover:bg-gray-700 -mr-1"
+              >
+                <FiX className="h-4 w-4 text-gray-400" />
+              </button>
             </div>
-            <button
-              onClick={onCancelAction}
-              className="p-1 rounded-full hover:bg-gray-700"
-            >
-              <FiX className="h-5 w-5 text-gray-400" />
-            </button>
+            <p className="text-gray-300 truncate max-w-xs sm:max-w-md mt-0.5">
+              {editingMessage ? editingMessage.content : replyingTo.content}
+            </p>
           </motion.div>
         )}
       </AnimatePresence>
