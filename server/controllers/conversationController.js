@@ -50,7 +50,7 @@ const getUserConversations = async (req, res) => {
     const conversations = await Conversation.find({
       participants: req.user.id,
     })
-      .populate("participants", "name avatar")
+      .populate("participants", "name avatar isOnline lastSeen")
       .populate({
         path: "lastMessage",
         populate: {
@@ -74,7 +74,7 @@ const getConversationById = async (req, res) => {
   try {
     const conversation = await Conversation.findById(req.params.id).populate(
       "participants",
-      "name avatar"
+      "name avatar isOnline lastSeen"
     );
 
     if (!conversation)

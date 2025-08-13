@@ -12,11 +12,16 @@ export const useSocket = () => {
 export const SocketProvider = ({ children }) => {
   const { token } = useAuth();
   const [socket, setSocket] = useState(null);
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
   useEffect(() => {
     if (token) {
       const newSocket = io(SOCKET_URL, { auth: { token } });
       setSocket(newSocket);
+
+      newSocket.on("getOnlineUsers", (users) => {
+        setOnlineUsers(users);
+      });
 
       newSocket.on("connect", () => {
         console.log("Socket connected successfully:", newSocket.id);
@@ -24,16 +29,24 @@ export const SocketProvider = ({ children }) => {
 
       newSocket.on("disconnect", (reason) => {
         console.log("Socket disconnected:", reason);
-        setSocket(null);
       });
 
       return () => {
+        newSocket.off("getOnlineUsers");
         newSocket.disconnect();
       };
+    } else {
+      if (socket) {
+        socket.disconnect();
+        setSocket(null);
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   return (
-    <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>
+    <SocketContext.Provider value={{ socket, onlineUsers }}>
+      {children}
+    </SocketContext.Provider>
   );
 };

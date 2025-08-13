@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const Message = require("../models/Message");
 const User = require("../models/User");
+const Conversation = require("../models/Conversation");
 
 let onlineUsers = new Map();
 
@@ -89,6 +90,21 @@ const initializeSocket = (io) => {
         finalMessage.tempId = tempId;
 
         io.to(conversationId).emit("newMessage", finalMessage);
+
+        const updatedConversation = await Conversation.findByIdAndUpdate(
+          conversationId,
+          { lastMessage: savedMessage._id },
+          { new: true }
+        )
+          .populate("participants", "name avatar isOnline lastSeen")
+          .populate({
+            path: "lastMessage",
+            populate: { path: "sender", select: "name" },
+          });
+
+        if (updatedConversation) {
+          io.emit("conversation_updated", updatedConversation);
+        }
       } catch (error) {
         console.error("!!! Critical Error on sendMessage:", error);
       }

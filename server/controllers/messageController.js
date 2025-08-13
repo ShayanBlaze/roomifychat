@@ -9,7 +9,7 @@ const getConversationMessages = async (req, res) => {
     if (conversationId === "general") {
       const messages = await Message.find({ conversationId: "general" })
         .sort({ createdAt: 1 })
-        .populate("sender", "name avatar")
+        .populate("sender", "name avatar isOnline lastSeen")
         .populate({
           path: "replyTo",
           populate: {
@@ -34,7 +34,7 @@ const getConversationMessages = async (req, res) => {
 
     const messages = await Message.find({ conversationId: conversationId })
       .sort({ createdAt: 1 })
-      .populate("sender", "name avatar")
+      .populate("sender", "name avatar isOnline lastSeen")
       .populate({
         path: "replyTo",
         populate: {

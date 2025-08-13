@@ -1,5 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { formatDistanceToNowStrict } from "date-fns";
+import { useSocket } from "../../auth/context/SocketProvider";
+
 import { IoClose, IoSend } from "react-icons/io5";
 
 import api from "../../../services/api";
@@ -38,6 +41,7 @@ const contentItemVariants = {
 
 const UserProfilePopup = ({ user, show, onClose }) => {
   const navigate = useNavigate();
+  const { onlineUsers } = useSocket();
 
   const onClickMessage = async () => {
     try {
@@ -50,6 +54,15 @@ const UserProfilePopup = ({ user, show, onClose }) => {
       console.error("Failed to start conversation:", error);
     }
   };
+
+  const isOnline = user && onlineUsers.includes(user._id);
+  const statusText = isOnline
+    ? "Online"
+    : user?.lastSeen
+    ? `Last seen ${formatDistanceToNowStrict(new Date(user.lastSeen), {
+        addSuffix: true,
+      })}`
+    : "";
 
   return (
     <AnimatePresence>
@@ -99,6 +112,15 @@ const UserProfilePopup = ({ user, show, onClose }) => {
                 className="text-center mt-4"
               >
                 <h2 className="text-2xl font-bold text-white">{user.name}</h2>
+                {statusText && (
+                  <p
+                    className={`text-sm mt-1 ${
+                      isOnline ? "text-green-400" : "text-gray-400"
+                    }`}
+                  >
+                    {statusText}
+                  </p>
+                )}
                 <p className="text-md text-gray-400 mt-1">{user.email}</p>
               </motion.div>
 

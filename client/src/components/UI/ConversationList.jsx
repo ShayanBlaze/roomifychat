@@ -2,7 +2,6 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { BsThreeDotsVertical, BsTrash } from "react-icons/bs";
 import { formatDistanceToNow } from "date-fns";
-import { CiCamera } from "react-icons/ci";
 
 import useAuth from "../../features/auth/hooks/useAuth";
 import api from "../../services/api";

@@ -4,7 +4,7 @@ import useAuth from "../../auth/hooks/useAuth";
 import { useSocket } from "../../auth/context/SocketProvider";
 
 export const useChat = ({ conversationId }) => {
-  const socket = useSocket();
+  const { socket } = useSocket();
   const { user } = useAuth();
 
   const [messages, setMessages] = useState([]);

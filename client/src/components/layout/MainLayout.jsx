@@ -14,6 +14,8 @@ import {
   IoLogOutOutline,
   IoMenuOutline,
 } from "react-icons/io5";
+import { formatDistanceToNowStrict } from "date-fns";
+
 import useAuth from "../../features/auth/hooks/useAuth";
 import ConversationList from "../UI/ConversationList";
 import { useSocket } from "../../features/auth/context/SocketProvider";
@@ -104,7 +106,13 @@ const SidebarContent = ({ onLinkClick }) => {
   );
 };
 
-const Header = ({ typingUsers, onMenuClick, title, avatar }) => {
+const Header = ({
+  typingUsers,
+  onMenuClick,
+  title,
+  avatar,
+  activityStatus,
+}) => {
   const getTypingText = () => {
     if (!typingUsers || typingUsers.length === 0) return "";
     const names = typingUsers.map((u) => u.name);
@@ -127,7 +135,7 @@ const Header = ({ typingUsers, onMenuClick, title, avatar }) => {
           <h1 className="text-lg sm:text-xl font-bold text-white">{title}</h1>
           <div className="h-5 text-xs sm:text-sm text-cyan-400">
             <AnimatePresence>
-              {typingUsers && typingUsers.length > 0 && (
+              {typingUsers && typingUsers.length > 0 ? (
                 <motion.p
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -137,6 +145,17 @@ const Header = ({ typingUsers, onMenuClick, title, avatar }) => {
                 >
                   {getTypingText()}
                 </motion.p>
+              ) : (
+                activityStatus && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="text-gray-400"
+                  >
+                    {activityStatus}
+                  </motion.p>
+                )
               )}
             </AnimatePresence>
           </div>
@@ -160,9 +179,9 @@ const MobileHeader = ({ onMenuClick, title }) => (
 const MainLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const socket = useSocket();
   const { setConversations, user } = useAuth();
   const { conversationId } = useParams();
+  const { onlineUsers, socket } = useSocket();
 
   const [headerDetails, setHeaderDetails] = useState({ title: "Dashboard" });
   const [typingUsers, setTypingUsers] = useState([]);
@@ -182,9 +201,20 @@ const MainLayout = () => {
               (p) => p._id !== user._id
             );
             if (otherParticipant) {
+              const isOnline = onlineUsers.includes(otherParticipant._id);
+              const status = isOnline
+                ? "Online"
+                : `Last seen ${formatDistanceToNowStrict(
+                    new Date(otherParticipant.lastSeen),
+                    {
+                      addSuffix: true,
+                    }
+                  )}`;
+
               setHeaderDetails({
                 title: otherParticipant.name,
                 avatar: otherParticipant.avatar,
+                activityStatus: status,
               });
             }
           } catch (error) {
@@ -202,7 +232,7 @@ const MainLayout = () => {
     if (user) {
       getHeaderDetails();
     }
-  }, [location.pathname, conversationId, user]);
+  }, [location.pathname, conversationId, user, onlineUsers]);
 
   useEffect(() => {
     if (!socket) {
@@ -287,6 +317,7 @@ const MainLayout = () => {
           onMenuClick={() => setIsMobileMenuOpen(true)}
           title={headerDetails.title}
           avatar={headerDetails.avatar}
+          activityStatus={headerDetails.activityStatus}
           typingUsers={
             location.pathname.startsWith("/chat/") ? typingUsers : []
           }
