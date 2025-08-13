@@ -13,6 +13,14 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  isOnline: {
+    type: Boolean,
+    default: false,
+  },
+  lastSeen: {
+    type: Date,
+    default: Date.now,
+  },
   date: { type: Date, default: Date.now },
 });
 

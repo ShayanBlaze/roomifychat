@@ -1,6 +1,8 @@
 const jwt = require("jsonwebtoken");
 const Message = require("../models/Message");
-const Conversation = require("../models/Conversation");
+const User = require("../models/User");
+
+let onlineUsers = new Map();
 
 const initializeSocket = (io) => {
   io.use((socket, next) => {
@@ -17,13 +19,23 @@ const initializeSocket = (io) => {
     });
   });
 
-  io.on("connection", (socket) => {
+  io.on("connection", async (socket) => {
     console.log(
       "A user connected:",
       socket.id,
       "with User ID:",
       socket.user.id
     );
+
+    onlineUsers.set(socket.user.id, socket.id);
+
+    try {
+      await User.findByIdAndUpdate(socket.user.id, { isOnline: true });
+    } catch (err) {
+      console.error("Error updating user status:", err);
+    }
+
+    io.emit("getOnlineUsers", Array.from(onlineUsers.keys()));
 
     socket.join("general");
     console.log(`User ${socket.id} joined the general room`);
@@ -32,13 +44,26 @@ const initializeSocket = (io) => {
       socket.join(conversationId);
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       console.log("User disconnected:", socket.id);
+
+      try {
+        await User.findByIdAndUpdate(socket.user.id, {
+          isOnline: false,
+          lastSeen: new Date(),
+        });
+      } catch (err) {
+        console.error("Error updating user to offline", err);
+      }
+
+      onlineUsers.delete(socket.user.id);
+
+      io.emit("getOnlineUsers", Array.from(onlineUsers.keys()));
     });
 
     socket.on("sendMessage", async (data) => {
       try {
-        const { content, type, tempId, conversationId, replyTo } = data; // دریافت replyTo
+        const { content, type, tempId, conversationId, replyTo } = data;
         const senderId = socket.user.id;
 
         const message = new Message({
