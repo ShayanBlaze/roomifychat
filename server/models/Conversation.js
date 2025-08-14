@@ -13,9 +13,22 @@ const conversationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Message",
     },
+    unreadCounts: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        count: { type: Number, default: 0 },
+      },
+    ],
   },
   { timestamps: true }
 );
+
+conversationSchema.methods.initializeUnreadCounts = function () {
+  this.unreadCounts = this.participants.map((p) => ({
+    userId: p._id,
+    count: 0,
+  }));
+};
 
 const Conversation = mongoose.model("Conversation", conversationSchema);
 

@@ -34,6 +34,8 @@ const createOrGetConversation = async (req, res) => {
       participants: participants,
     });
 
+    newConversation.initializeUnreadCounts();
+
     const savedConversation = await newConversation.save();
     res.status(201).json(savedConversation);
   } catch (error) {

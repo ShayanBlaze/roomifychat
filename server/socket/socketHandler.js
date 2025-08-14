@@ -27,38 +27,34 @@ const initializeSocket = (io) => {
       "with User ID:",
       socket.user.id
     );
-
     onlineUsers.set(socket.user.id, socket.id);
 
     try {
       await User.findByIdAndUpdate(socket.user.id, { isOnline: true });
     } catch (err) {
-      console.error("Error updating user status:", err);
+      console.error("Error updating user status to online:", err);
     }
 
     io.emit("getOnlineUsers", Array.from(onlineUsers.keys()));
 
-    socket.join("general");
-    console.log(`User ${socket.id} joined the general room`);
-
     socket.on("join_conversation", (conversationId) => {
       socket.join(conversationId);
+      console.log(
+        `User ${socket.id} (User ID: ${socket.user.id}) joined conversation: ${conversationId}`
+      );
     });
 
     socket.on("disconnect", async () => {
       console.log("User disconnected:", socket.id);
-
       try {
         await User.findByIdAndUpdate(socket.user.id, {
           isOnline: false,
           lastSeen: new Date(),
         });
       } catch (err) {
-        console.error("Error updating user to offline", err);
+        console.error("Error updating user status to offline:", err);
       }
-
       onlineUsers.delete(socket.user.id);
-
       io.emit("getOnlineUsers", Array.from(onlineUsers.keys()));
     });
 
@@ -80,10 +76,7 @@ const initializeSocket = (io) => {
           .populate("sender", "name _id avatar")
           .populate({
             path: "replyTo",
-            populate: {
-              path: "sender",
-              select: "name",
-            },
+            populate: { path: "sender", select: "name" },
           });
 
         const finalMessage = populatedMessage.toObject();
@@ -91,25 +84,143 @@ const initializeSocket = (io) => {
 
         io.to(conversationId).emit("newMessage", finalMessage);
 
-        const updatedConversation = await Conversation.findByIdAndUpdate(
-          conversationId,
-          { lastMessage: savedMessage._id },
-          { new: true }
-        )
-          .populate("participants", "name avatar isOnline lastSeen")
-          .populate({
-            path: "lastMessage",
-            populate: { path: "sender", select: "name" },
+        const conversation = await Conversation.findById(conversationId);
+        if (conversation) {
+          // Increment unread counts for all other participants
+          conversation.participants.forEach((participantId) => {
+            if (participantId.toString() !== senderId) {
+              const userUnread = conversation.unreadCounts.find(
+                (uc) => uc.userId.toString() === participantId.toString()
+              );
+              if (userUnread) {
+                userUnread.count += 1;
+              } else {
+                // This case is a fallback, should be initialized
+                conversation.unreadCounts.push({
+                  userId: participantId,
+                  count: 1,
+                });
+              }
+
+              // --- START: In-App Notification Logic ---
+              const recipientSocketId = onlineUsers.get(
+                participantId.toString()
+              );
+              if (recipientSocketId) {
+                // Check if user is not in the conversation room
+                const recipientSocket =
+                  io.sockets.sockets.get(recipientSocketId);
+                if (
+                  recipientSocket &&
+                  !recipientSocket.rooms.has(conversationId)
+                ) {
+                  io.to(recipientSocketId).emit("inAppNotification", {
+                    message: populatedMessage,
+                    conversationId: conversationId,
+                    sender: populatedMessage.sender,
+                  });
+                }
+              }
+              // --- END: In-App Notification Logic ---
+            }
           });
 
-        if (updatedConversation) {
-          io.emit("conversation_updated", updatedConversation);
+          conversation.lastMessage = savedMessage._id;
+          const updatedConversation = await conversation.save();
+
+          const populatedConvo = await Conversation.findById(
+            updatedConversation._id
+          )
+            .populate("participants", "name avatar isOnline lastSeen")
+            .populate({
+              path: "lastMessage",
+              populate: { path: "sender", select: "name" },
+            });
+
+          if (populatedConvo) {
+            // Emit to all participants of the conversation
+            populatedConvo.participants.forEach((p) => {
+              const userSocketId = onlineUsers.get(p._id.toString());
+              if (userSocketId) {
+                io.to(userSocketId).emit(
+                  "conversation_updated",
+                  populatedConvo
+                );
+              }
+            });
+          }
         }
       } catch (error) {
         console.error("!!! Critical Error on sendMessage:", error);
       }
     });
 
+    // --- START: New event for marking conversation as read ---
+    socket.on("markConversationAsRead", async ({ conversationId }) => {
+      try {
+        const userId = socket.user.id;
+        const conversation = await Conversation.findOne({
+          _id: conversationId,
+          participants: userId,
+        });
+
+        if (!conversation) return;
+
+        // Update message statuses to 'read'
+        await Message.updateMany(
+          {
+            conversationId: conversationId,
+            sender: { $ne: userId },
+            status: { $ne: "read" },
+          },
+          { $set: { status: "read" } }
+        );
+
+        // Reset user's unread count for this conversation
+        const userUnread = conversation.unreadCounts.find(
+          (uc) => uc.userId.toString() === userId
+        );
+        if (userUnread && userUnread.count > 0) {
+          userUnread.count = 0;
+          await conversation.save();
+        }
+
+        // Fetch the updated conversation to send back
+        const updatedConversation = await Conversation.findById(conversationId)
+          .populate("participants", "name avatar isOnline lastSeen")
+          .populate({
+            path: "lastMessage",
+            populate: { path: "sender", select: "name" },
+          });
+
+        // Notify all participants about the update
+        if (updatedConversation) {
+          updatedConversation.participants.forEach((p) => {
+            const userSocketId = onlineUsers.get(p._id.toString());
+            if (userSocketId) {
+              // Send a specific event for status updates to avoid re-rendering everything
+              io.to(userSocketId).emit(
+                "conversation_updated",
+                updatedConversation
+              );
+              io.to(conversationId).emit("messages_read", {
+                conversationId,
+                readerId: userId,
+              });
+            }
+          });
+        }
+      } catch (error) {
+        console.error("Error in markConversationAsRead:", error);
+      }
+    });
+    // --- END: New event for marking conversation as read ---
+
+    // Note: The old 'messageSeen' event is now replaced by the logic in 'markConversationAsRead'
+    // You can remove the old 'socket.on("messageSeen", ...)' block if you wish.
+
+    // ... (rest of the socket handlers: editMessage, deleteMessage, typing, etc.)
+    // Make sure to keep them as they are.
     socket.on("editMessage", async ({ messageId, newContent }) => {
       try {
         const userId = socket.user.id;
@@ -178,40 +289,6 @@ const initializeSocket = (io) => {
           id: socket.id,
           name: data.name,
         });
-      }
-    });
-
-    socket.on("messageSeen", async ({ messageId, conversationId }) => {
-      try {
-        if (!messageId || !conversationId) {
-          console.error(
-            "messageSeen event missing messageId or conversationId"
-          );
-          return;
-        }
-
-        const readerId = socket.user.id;
-        const message = await Message.findById(messageId);
-
-        if (!message || message.sender.toString() === readerId) {
-          return;
-        }
-
-        if (message.status === "read") {
-          return;
-        }
-
-        const updatedMessage = await Message.findByIdAndUpdate(
-          messageId,
-          { status: "read" },
-          { new: true }
-        ).populate("sender", "name _id avatar");
-
-        if (updatedMessage) {
-          io.to(conversationId).emit("messageStatusUpdate", updatedMessage);
-        }
-      } catch (err) {
-        console.error("Error updating message status:", err);
       }
     });
   });
