@@ -15,6 +15,8 @@ import {
   IoMenuOutline,
 } from "react-icons/io5";
 import { formatDistanceToNowStrict } from "date-fns";
+import toast from "react-hot-toast";
+import { FiMessageSquare } from "react-icons/fi";
 
 import useAuth from "../../features/auth/hooks/useAuth";
 import ConversationList from "../UI/ConversationList";
@@ -182,6 +184,7 @@ const MainLayout = () => {
   const { setConversations, user } = useAuth();
   const { conversationId } = useParams();
   const { onlineUsers, socket } = useSocket();
+  const navigate = useNavigate();
 
   const [headerDetails, setHeaderDetails] = useState({ title: "Dashboard" });
   const [typingUsers, setTypingUsers] = useState([]);
@@ -239,6 +242,61 @@ const MainLayout = () => {
       return;
     }
 
+    const handleInAppNotification = ({ message, conversationId, sender }) => {
+      if (location.pathname === `/chat/${conversationId}`) {
+        return;
+      }
+
+      toast.custom(
+        (t) => (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className={`max-w-md w-full bg-gray-800 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+            onClick={() => {
+              navigate(`/chat/${conversationId}`);
+              toast.dismiss(t.id);
+            }}
+          >
+            <div className="flex-1 w-0 p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 pt-0.5">
+                  <img
+                    className="h-10 w-10 rounded-full"
+                    src={sender.avatar}
+                    alt={sender.name}
+                  />
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="text-sm font-medium text-white">
+                    {sender.name}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-400 truncate">
+                    {message.type === "image" ? "📷 Photo" : message.content}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex border-l border-gray-700">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toast.dismiss(t.id);
+                }}
+                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-indigo-400 hover:text-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                Close
+              </button>
+            </div>
+          </motion.div>
+        ),
+        {
+          id: `notification-${conversationId}`,
+        }
+      );
+    };
+
     const handleNewConversation = (newConvo) => {
       console.log("!!! EVENT RECEIVED: 'conversation_started'", newConvo);
 
@@ -273,14 +331,16 @@ const MainLayout = () => {
       });
     };
 
+    socket.on("inAppNotification", handleInAppNotification);
     socket.on("conversation_started", handleNewConversation);
     socket.on("conversation_updated", handleConversationUpdated);
 
     return () => {
+      socket.off("inAppNotification", handleInAppNotification);
       socket.off("conversation_started", handleNewConversation);
       socket.off("conversation_updated", handleConversationUpdated);
     };
-  }, [socket, setConversations]);
+  }, [socket, setConversations, location.pathname, navigate]);
 
   return (
     <div className="flex h-screen w-full bg-gray-900 text-gray-300">

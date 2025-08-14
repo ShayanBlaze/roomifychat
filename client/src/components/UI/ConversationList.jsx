@@ -1,9 +1,11 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
-import { BsThreeDotsVertical, BsTrash } from "react-icons/bs";
+import { BsThreeDotsVertical, BsTrash, BsEnvelopeOpen } from "react-icons/bs";
 import { formatDistanceToNow } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
 
 import useAuth from "../../features/auth/hooks/useAuth";
+import { useSocket } from "../../features/auth/context/SocketProvider";
 import api from "../../services/api";
 
 const isPersian = (text) => {
@@ -14,6 +16,7 @@ const isPersian = (text) => {
 
 const ConversationList = ({ onLinkClick }) => {
   const { user: currentUser, conversations, setConversations } = useAuth();
+  const { socket } = useSocket();
   const navigate = useNavigate();
 
   const [openMenuId, setOpenMenuId] = useState(null);
@@ -38,8 +41,18 @@ const ConversationList = ({ onLinkClick }) => {
       prevId === conversationId ? null : conversationId
     );
   };
+  const handleMarkAsRead = (e, conversationId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (socket) {
+      socket.emit("markConversationAsRead", { conversationId });
+    }
+    setOpenMenuId(null);
+  };
 
-  const handleDelete = async (conversationId) => {
+  const handleDelete = async (e, conversationId) => {
+    e.preventDefault();
+    e.stopPropagation();
     setOpenMenuId(null);
     if (window.confirm("Are you sure you want to delete this conversation?")) {
       try {
@@ -74,19 +87,21 @@ const ConversationList = ({ onLinkClick }) => {
           const otherParticipant = convo.participants.find(
             (p) => p._id !== currentUser._id
           );
-
           if (!otherParticipant) return null;
+
+          const unreadInfo = convo.unreadCounts?.find(
+            (uc) => uc.userId === currentUser._id
+          );
+          const unreadCount = unreadInfo?.count || 0;
+          const displayCount = unreadCount > 9 ? "9+" : unreadCount;
 
           const lastMessage = convo.lastMessage;
           const messageIsPersian = isPersian(lastMessage?.content);
 
           let lastMessageContent = "";
           if (lastMessage) {
-            if (lastMessage.type === "image") {
-              lastMessageContent = `📷 Photo`;
-            } else {
-              lastMessageContent = lastMessage.content;
-            }
+            lastMessageContent =
+              lastMessage.type === "image" ? "📷 Photo" : lastMessage.content;
           }
 
           return (
@@ -116,55 +131,85 @@ const ConversationList = ({ onLinkClick }) => {
                   <p
                     className={`mt-0.5 truncate text-sm ${
                       messageIsPersian ? "text-right" : "text-left"
-                    } ${lastMessage.isRead ? "text-red-500" : "text-white"}`}
+                    } ${
+                      unreadCount > 0 ? "text-white font-bold" : "text-gray-400"
+                    }`}
                     dir={messageIsPersian ? "rtl" : "ltr"}
                   >
                     {lastMessageContent}
                   </p>
                 )}
-                <div className="mt-1">
-                  <span className="text-xs text-gray-400">
-                    {lastMessage?.createdAt && (
-                      <time dateTime={lastMessage.createdAt}>
-                        {formatDistanceToNow(new Date(lastMessage.createdAt), {
-                          addSuffix: true,
-                        })}
-                      </time>
-                    )}
+                {lastMessage?.createdAt && (
+                  <span className="text-xs text-gray-500 mt-1">
+                    <time dateTime={lastMessage.createdAt}>
+                      {formatDistanceToNow(new Date(lastMessage.createdAt), {
+                        addSuffix: true,
+                      })}
+                    </time>
                   </span>
-                </div>
+                )}
               </div>
 
-              <div
-                className="ml-auto flex-shrink-0"
-                ref={openMenuId === convo._id ? menuRef : null}
-              >
-                <button
-                  onClick={(e) => handleMenuToggle(e, convo._id)}
-                  className="p-1.5 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white cursor-pointer"
-                  aria-label="More options"
+              <div className="flex flex-col items-center justify-between h-full ml-auto flex-shrink-0">
+                <div
+                  className="relative"
+                  ref={openMenuId === convo._id ? menuRef : null}
                 >
-                  <BsThreeDotsVertical className="h-5 w-5" />
-                </button>
-
-                {openMenuId === convo._id && (
-                  <div
-                    className="absolute right-4 mt-2 w-48 origin-top-right rounded-md bg-gray-800 shadow-lg ring-opacity-5 focus:outline-none z-20"
-                    role="menu"
-                    aria-orientation="vertical"
+                  <button
+                    onClick={(e) => handleMenuToggle(e, convo._id)}
+                    className="p-1.5 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white cursor-pointer"
+                    aria-label="More options"
                   >
-                    <div className="py-1" role="none">
-                      <button
-                        onClick={() => handleDelete(convo._id)}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-gray-700 cursor-pointer"
-                        role="menuitem"
+                    <BsThreeDotsVertical className="h-5 w-5" />
+                  </button>
+
+                  <AnimatePresence>
+                    {openMenuId === convo._id && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        className="absolute right-4 mt-2 w-48 origin-top-right rounded-md bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20"
+                        role="menu"
+                        aria-orientation="vertical"
                       >
-                        <BsTrash className="h-5 w-5" />
-                        <span>Delete</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
+                        <div className="py-1" role="none">
+                          {unreadCount > 0 && (
+                            <button
+                              onClick={(e) => handleMarkAsRead(e, convo._id)}
+                              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-cyan-300 hover:bg-gray-700 cursor-pointer"
+                              role="menuitem"
+                            >
+                              <BsEnvelopeOpen className="h-5 w-5" />
+                              <span>Mark as read</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => handleDelete(e, convo._id)}
+                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-gray-700 cursor-pointer"
+                            role="menuitem"
+                          >
+                            <BsTrash className="h-5 w-5" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <AnimatePresence>
+                  {unreadCount > 0 && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                      className="mt-2 w-6 h-6 flex items-center justify-center bg-emerald-500 text-white text-xs font-bold rounded-full"
+                    >
+                      {displayCount}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </NavLink>
           );

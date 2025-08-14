@@ -5,37 +5,44 @@ import { useSocket } from "../../auth/context/SocketProvider";
 
 export const useChat = ({ conversationId }) => {
   const { socket } = useSocket();
-  const { user } = useAuth();
+  const { user, setConversations } = useAuth();
 
   const [messages, setMessages] = useState([]);
   const [typingUsers, setTypingUsers] = useState([]);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    if (!conversationId) return;
+    if (!socket || !conversationId) return;
 
     const fetchInitialMessages = async () => {
       try {
         setMessages([]);
         const response = await api.get(`/messages/${conversationId}`);
         setMessages(Array.isArray(response.data) ? response.data : []);
+
+        socket.emit("markConversationAsRead", { conversationId });
       } catch (error) {
         console.error("Failed to fetch initial messages:", error);
         setMessages([]);
       }
     };
 
+    socket.emit("join_conversation", conversationId);
     fetchInitialMessages();
 
-    if (socket) {
-      socket.emit("join_conversation", conversationId);
-    }
+    return () => {
+      socket.emit("leave_conversation", conversationId);
+    };
   }, [conversationId, socket]);
 
   useEffect(() => {
     if (!socket || !user) return;
 
     const handleNewMessage = (receivedMessage) => {
+      if (receivedMessage.conversationId === conversationId) {
+        socket.emit("markConversationAsRead", { conversationId });
+      }
+
       setMessages((prevMessages) => {
         const isOptimisticReplacement =
           receivedMessage.tempId &&
@@ -50,9 +57,20 @@ export const useChat = ({ conversationId }) => {
         if (!prevMessages.some((msg) => msg._id === receivedMessage._id)) {
           return [...prevMessages, receivedMessage];
         }
-
         return prevMessages;
       });
+    };
+
+    const handleMessagesRead = ({ conversationId: readConvoId, readerId }) => {
+      if (readConvoId === conversationId) {
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg.status !== "read" && msg.sender._id !== readerId
+              ? { ...msg, status: "read" }
+              : msg
+          )
+        );
+      }
     };
 
     const handleUserTyping = (data) => {
@@ -84,6 +102,7 @@ export const useChat = ({ conversationId }) => {
     socket.on("userTyping", handleUserTyping);
     socket.on("userStoppedTyping", handleUserStoppedTyping);
     socket.on("messageStatusUpdate", handleMessageStatusUpdate);
+    socket.on("messages_read", handleMessagesRead);
 
     return () => {
       socket.off("newMessage", handleNewMessage);
@@ -92,24 +111,15 @@ export const useChat = ({ conversationId }) => {
       socket.off("userTyping", handleUserTyping);
       socket.off("userStoppedTyping", handleUserStoppedTyping);
       socket.off("messageStatusUpdate", handleMessageStatusUpdate);
+      socket.off("messages_read", handleMessagesRead);
     };
-  }, [socket, user]);
+  }, [socket, user, conversationId]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-    const unreadMessages = messages.filter(
-      (msg) => msg.status !== "read" && msg.sender._id !== user?._id
-    );
-
-    if (unreadMessages.length > 0 && socket) {
-      socket.emit("messageSeen", {
-        messageId: unreadMessages[0]._id,
-        conversationId: conversationId,
-      });
-    }
-  }, [messages, user, socket, conversationId]);
+  }, [messages]);
 
   const sendMessage = (messageData) => {
     if (socket && user) {

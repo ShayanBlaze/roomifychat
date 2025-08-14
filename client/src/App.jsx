@@ -1,4 +1,6 @@
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+
 import LoginPage from "./features/auth/pages/LoginPage";
 import HomePage from "./components/pages/HomePage";
 import RegisterPage from "./features/auth/pages/RegisterPage";
@@ -16,6 +18,25 @@ function App() {
   return (
     <AuthProvider>
       <SocketProvider>
+        <Toaster
+          position="top-center"
+          reverseOrder={false}
+          gutter={8}
+          toastOptions={{
+            duration: 5000,
+            style: {
+              background: "#334155",
+              color: "#fff",
+            },
+            success: {
+              duration: 3000,
+              theme: {
+                primary: "green",
+                secondary: "black",
+              },
+            },
+          }}
+        />
         <Router>
           <Routes>
             {/* Public Routes with Fixed Header */}

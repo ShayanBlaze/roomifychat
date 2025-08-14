@@ -44,6 +44,13 @@ const initializeSocket = (io) => {
       );
     });
 
+    socket.on("leave_conversation", (conversationId) => {
+      socket.leave(conversationId);
+      console.log(
+        `User ${socket.id} (User ID: ${socket.user.id}) left conversation: ${conversationId}`
+      );
+    });
+
     socket.on("disconnect", async () => {
       console.log("User disconnected:", socket.id);
       try {
@@ -84,70 +91,66 @@ const initializeSocket = (io) => {
 
         io.to(conversationId).emit("newMessage", finalMessage);
 
-        const conversation = await Conversation.findById(conversationId);
-        if (conversation) {
-          // Increment unread counts for all other participants
-          conversation.participants.forEach((participantId) => {
-            if (participantId.toString() !== senderId) {
-              const userUnread = conversation.unreadCounts.find(
-                (uc) => uc.userId.toString() === participantId.toString()
-              );
-              if (userUnread) {
-                userUnread.count += 1;
-              } else {
-                // This case is a fallback, should be initialized
-                conversation.unreadCounts.push({
-                  userId: participantId,
-                  count: 1,
-                });
-              }
-
-              // --- START: In-App Notification Logic ---
-              const recipientSocketId = onlineUsers.get(
-                participantId.toString()
-              );
-              if (recipientSocketId) {
-                // Check if user is not in the conversation room
-                const recipientSocket =
-                  io.sockets.sockets.get(recipientSocketId);
-                if (
-                  recipientSocket &&
-                  !recipientSocket.rooms.has(conversationId)
-                ) {
-                  io.to(recipientSocketId).emit("inAppNotification", {
-                    message: populatedMessage,
-                    conversationId: conversationId,
-                    sender: populatedMessage.sender,
+        if (conversationId !== "general") {
+          const conversation = await Conversation.findById(conversationId);
+          if (conversation) {
+            conversation.participants.forEach((participantId) => {
+              if (participantId.toString() !== senderId) {
+                const userUnread = conversation.unreadCounts.find(
+                  (uc) => uc.userId.toString() === participantId.toString()
+                );
+                if (userUnread) {
+                  userUnread.count += 1;
+                } else {
+                  conversation.unreadCounts.push({
+                    userId: participantId,
+                    count: 1,
                   });
                 }
-              }
-              // --- END: In-App Notification Logic ---
-            }
-          });
 
-          conversation.lastMessage = savedMessage._id;
-          const updatedConversation = await conversation.save();
-
-          const populatedConvo = await Conversation.findById(
-            updatedConversation._id
-          )
-            .populate("participants", "name avatar isOnline lastSeen")
-            .populate({
-              path: "lastMessage",
-              populate: { path: "sender", select: "name" },
-            });
-
-          if (populatedConvo) {
-            // Emit to all participants of the conversation
-            populatedConvo.participants.forEach((p) => {
-              const userSocketId = onlineUsers.get(p._id.toString());
-              if (userSocketId) {
-                io.to(userSocketId).emit(
-                  "conversation_updated",
-                  populatedConvo
+                const recipientSocketId = onlineUsers.get(
+                  participantId.toString()
                 );
+                if (recipientSocketId) {
+                  const recipientSocket =
+                    io.sockets.sockets.get(recipientSocketId);
+                  if (
+                    recipientSocket &&
+                    !recipientSocket.rooms.has(conversationId)
+                  ) {
+                    io.to(recipientSocketId).emit("inAppNotification", {
+                      message: populatedMessage,
+                      conversationId: conversationId,
+                      sender: populatedMessage.sender,
+                    });
+                  }
+                }
               }
             });
+
+            conversation.lastMessage = savedMessage._id;
+            const updatedConversation = await conversation.save();
+
+            const populatedConvo = await Conversation.findById(
+              updatedConversation._id
+            )
+              .populate("participants", "name avatar isOnline lastSeen")
+              .populate({
+                path: "lastMessage",
+                populate: { path: "sender", select: "name" },
+              });
+
+            if (populatedConvo) {
+              populatedConvo.participants.forEach((p) => {
+                const userSocketId = onlineUsers.get(p._id.toString());
+                if (userSocketId) {
+                  io.to(userSocketId).emit(
+                    "conversation_updated",
+                    populatedConvo
+                  );
+                }
+              });
+            }
           }
         }
       } catch (error) {
@@ -155,8 +158,11 @@ const initializeSocket = (io) => {
       }
     });
 
-    // --- START: New event for marking conversation as read ---
     socket.on("markConversationAsRead", async ({ conversationId }) => {
+      if (conversationId === "general") {
+        return;
+      }
+
       try {
         const userId = socket.user.id;
         const conversation = await Conversation.findOne({
@@ -166,7 +172,6 @@ const initializeSocket = (io) => {
 
         if (!conversation) return;
 
-        // Update message statuses to 'read'
         await Message.updateMany(
           {
             conversationId: conversationId,
@@ -176,7 +181,6 @@ const initializeSocket = (io) => {
           { $set: { status: "read" } }
         );
 
-        // Reset user's unread count for this conversation
         const userUnread = conversation.unreadCounts.find(
           (uc) => uc.userId.toString() === userId
         );
@@ -185,7 +189,6 @@ const initializeSocket = (io) => {
           await conversation.save();
         }
 
-        // Fetch the updated conversation to send back
         const updatedConversation = await Conversation.findById(conversationId)
           .populate("participants", "name avatar isOnline lastSeen")
           .populate({
@@ -193,12 +196,10 @@ const initializeSocket = (io) => {
             populate: { path: "sender", select: "name" },
           });
 
-        // Notify all participants about the update
         if (updatedConversation) {
           updatedConversation.participants.forEach((p) => {
             const userSocketId = onlineUsers.get(p._id.toString());
             if (userSocketId) {
-              // Send a specific event for status updates to avoid re-rendering everything
               io.to(userSocketId).emit(
                 "conversation_updated",
                 updatedConversation
@@ -214,20 +215,13 @@ const initializeSocket = (io) => {
         console.error("Error in markConversationAsRead:", error);
       }
     });
-    // --- END: New event for marking conversation as read ---
 
-    // Note: The old 'messageSeen' event is now replaced by the logic in 'markConversationAsRead'
-    // You can remove the old 'socket.on("messageSeen", ...)' block if you wish.
-
-    // ... (rest of the socket handlers: editMessage, deleteMessage, typing, etc.)
-    // Make sure to keep them as they are.
     socket.on("editMessage", async ({ messageId, newContent }) => {
       try {
         const userId = socket.user.id;
         const message = await Message.findById(messageId);
 
         if (!message || message.sender.toString() !== userId) {
-          console.error("Unauthorized edit attempt or message not found.");
           return;
         }
 
@@ -257,7 +251,6 @@ const initializeSocket = (io) => {
         const message = await Message.findById(messageId);
 
         if (!message || message.sender.toString() !== userId) {
-          console.error("Unauthorized delete attempt or message not found.");
           return;
         }
 
