@@ -16,6 +16,7 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (token) {
+      console.log("CLIENT: Attempting to connect with token:", token);
       const newSocket = io(SOCKET_URL, { auth: { token } });
       setSocket(newSocket);
 
