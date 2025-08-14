@@ -27,7 +27,14 @@ const io = new Server(server, {
 
 initializeSocket(io);
 
-app.use(cors());
+const corsOptions = {
+  origin: process.env.CLIENT_URL,
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  credentials: true,
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // --- Public Routes don't require authentication ---
