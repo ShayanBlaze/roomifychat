@@ -39,19 +39,16 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// --- Public Routes don't require authentication ---
+// --- Public Routes ---
 app.get("/api/v1", (req, res) => res.send("Welcome to Roomify Chat API"));
 app.use("/api/v1/auth", authRoutes);
 
-// --- Middleware for all protected routes ---
-app.use(authMiddleware);
-
 // --- Protected Routes ---
-app.use("/api/v1/upload", uploadRoutes);
-app.use("/api/v1/messages", messageRoutes);
-app.use("/api/v1/user", userRoutes);
-app.use("/api/v1/conversations", conversationRoute);
-app.get("/api/v1/dashboard", getDashboardData);
+app.use("/api/v1/upload", authMiddleware, uploadRoutes);
+app.use("/api/v1/messages", authMiddleware, messageRoutes);
+app.use("/api/v1/user", authMiddleware, userRoutes);
+app.use("/api/v1/conversations", authMiddleware, conversationRoute);
+app.get("/api/v1/dashboard", authMiddleware, getDashboardData);
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../client/dist")));
