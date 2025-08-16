@@ -17,8 +17,6 @@ const path = require("path");
 const app = express();
 const server = http.createServer(app);
 
-const __dirname = path.resolve();
-
 const io = new Server(server, {
   cors: {
     origin: process.env.CLIENT_URL,
