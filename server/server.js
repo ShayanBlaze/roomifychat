@@ -13,8 +13,12 @@ const userRoutes = require("./routes/userRoutes");
 const { getDashboardData } = require("./controllers/dashboardController");
 const authMiddleware = require("./middleware/authMiddleware");
 
+import path from "path";
+
 const app = express();
 const server = http.createServer(app);
+
+const __dirname = path.resolve();
 
 const io = new Server(server, {
   cors: {
@@ -51,6 +55,14 @@ app.use("/api/v1/messages", messageRoutes);
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/conversations", conversationRoute);
 app.use("/api/v1/dashboard", getDashboardData);
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../client/dist")));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../client", "dist", "index.html"));
+  });
+}
 
 const PORT = process.env.PORT || 3000;
 

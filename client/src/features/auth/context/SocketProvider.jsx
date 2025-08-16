@@ -2,7 +2,8 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import useAuth from "../hooks/useAuth";
 
-const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+const SOCKET_URL =
+  import.meta.env.MODE === "development" ? "https://localhost:3000" : "";
 const SocketContext = createContext(null);
 
 export const useSocket = () => {

@@ -1,9 +1,0 @@
-# Server Configuration
-PORT=
-MONGO_URI=
-JWT_SECRET=
-
-# Cloudinary Credentials
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
