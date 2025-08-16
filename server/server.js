@@ -51,7 +51,7 @@ app.use("/api/v1/upload", uploadRoutes);
 app.use("/api/v1/messages", messageRoutes);
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/conversations", conversationRoute);
-app.use("/api/v1/dashboard", getDashboardData);
+app.get("/api/v1/dashboard", getDashboardData);
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../client/dist")));
