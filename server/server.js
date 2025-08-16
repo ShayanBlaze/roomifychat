@@ -12,8 +12,7 @@ const uploadRoutes = require("./routes/uploadRoutes");
 const userRoutes = require("./routes/userRoutes");
 const { getDashboardData } = require("./controllers/dashboardController");
 const authMiddleware = require("./middleware/authMiddleware");
-
-import path from "path";
+const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
