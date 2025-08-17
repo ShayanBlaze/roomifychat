@@ -2,8 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import useAuth from "../hooks/useAuth";
 
-const SOCKET_URL =
-  import.meta.env.MODE === "development" ? "https://localhost:3000" : "";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 const SocketContext = createContext(null);
 
 export const useSocket = () => {

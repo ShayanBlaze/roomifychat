@@ -17,9 +17,26 @@ const path = require("path");
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigins = [process.env.CLIENT_URL, process.env.DEV_URL];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  credentials: true,
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL,
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -29,14 +46,6 @@ const io = new Server(server, {
 
 initializeSocket(io);
 
-const corsOptions = {
-  origin: process.env.CLIENT_URL,
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  credentials: true,
-  optionsSuccessStatus: 204,
-};
-
-app.use(cors(corsOptions));
 app.use(express.json());
 
 // --- Public Routes ---
