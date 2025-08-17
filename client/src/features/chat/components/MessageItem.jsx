@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import twemoji from "twemoji";
+import DOMPurify from "dompurify";
 import { FiCornerUpLeft, FiEdit2, FiImage } from "react-icons/fi";
 
 const formatTime = (dateString) => {
@@ -23,13 +24,15 @@ const RenderParsedText = ({ content }) => {
     ext: ".svg",
   });
 
+  const cleanHtml = DOMPurify.sanitize(parsedHtml);
+
   return (
     <p
       className={`text-sm sm:text-base break-words ${
         isRtl ? "text-right" : "text-left"
       }`}
       dir={isRtl ? "rtl" : "ltr"}
-      dangerouslySetInnerHTML={{ __html: parsedHtml }}
+      dangerouslySetInnerHTML={{ __html: cleanHtml }}
     />
   );
 };
