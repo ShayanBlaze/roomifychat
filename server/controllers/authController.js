@@ -40,7 +40,7 @@ const registerUser = async (req, res) => {
     res.status(StatusCodes.CREATED).json({
       success: true,
       user: {
-        id: user._id,
+        _id: user._id,
         email: user.email,
         name: user.name,
         avatar: user.avatar,
@@ -85,7 +85,7 @@ const loginUser = async (req, res) => {
     res.status(StatusCodes.OK).json({
       success: true,
       user: {
-        id: user._id,
+        _id: user._id,
         email: user.email,
         name: user.name,
         avatar: user.avatar,

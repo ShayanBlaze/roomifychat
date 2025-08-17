@@ -25,7 +25,16 @@ const corsOptions = {
 };
 
 // --- Middlewares ---
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        "img-src": ["'self'", "data:", "res.cloudinary.com"],
+      },
+    },
+  })
+);
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
