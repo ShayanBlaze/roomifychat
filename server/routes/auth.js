@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { body, validationResult } = require("express-validator");
 const {
   registerUser,
   loginUser,
@@ -9,12 +10,29 @@ const {
 // @route   POST api/v1/auth/register
 // @desc    Register a user
 // @access  Public
-router.post("/register", registerUser);
+router.post(
+  "/register",
+  [
+    body("name", "Name is required").not().isEmpty(),
+    body("email", "Please include a valid email").isEmail(),
+    body("password", "Password must be 6 or more characters").isLength({
+      min: 6,
+    }),
+  ],
+  registerUser
+);
 
 // @route POST api/v1/auth/login
 // @desc    Authenticate user & get token
 // @access  Public
-router.post("/login", loginUser);
+router.post(
+  "/login",
+  [
+    body("email", "Please include a valid email").isEmail(),
+    body("password", "Password is required").exists(),
+  ],
+  loginUser
+);
 
 // @route   GET api/v1/auth/me
 // @desc    Get current user
