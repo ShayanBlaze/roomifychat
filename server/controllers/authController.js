@@ -30,9 +30,15 @@ const registerUser = async (req, res) => {
       expiresIn: "7d",
     });
 
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     res.status(StatusCodes.CREATED).json({
       success: true,
-      token,
       user: {
         id: user._id,
         email: user.email,
@@ -54,31 +60,30 @@ const loginUser = async (req, res) => {
   if (!errors.isEmpty()) {
     return res.status(StatusCodes.BAD_REQUEST).json({ errors: errors.array() });
   }
-  
+
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
 
-    if (!user) {
-      return res
-        .status(StatusCodes.UNAUTHORIZED)
-        .json({ message: "Invalid credentials" });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res
         .status(StatusCodes.UNAUTHORIZED)
         .json({ message: "Invalid credentials" });
     }
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "7d",
+    });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     res.status(StatusCodes.OK).json({
       success: true,
-      token,
       user: {
         id: user._id,
         email: user.email,

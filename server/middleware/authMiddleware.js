@@ -2,15 +2,13 @@ const jwt = require("jsonwebtoken");
 const { StatusCodes } = require("http-status-codes");
 
 const authMiddleware = (req, res, next) => {
-  const authHeader = req.header("Authorization");
+  const token = req.cookies.token;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!token) {
     return res
       .status(StatusCodes.UNAUTHORIZED)
-      .json({ message: "No token provided or token is invalid" });
+      .json({ message: "Not authorized, no token" });
   }
-
-  const token = authHeader.split(" ")[1];
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);

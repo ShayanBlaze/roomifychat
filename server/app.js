@@ -3,6 +3,7 @@ const cors = require("cors");
 const path = require("path");
 const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
+const cookieParser = require("cookie-parser");
 
 const mainApiRouter = require("./routes");
 
@@ -27,6 +28,7 @@ const corsOptions = {
 app.use(helmet());
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(cookieParser());
 
 // --- Rate Limiting ---
 const limiter = rateLimit({

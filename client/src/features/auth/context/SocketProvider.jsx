@@ -10,14 +10,16 @@ export const useSocket = () => {
 };
 
 export const SocketProvider = ({ children }) => {
-  const { token } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
 
   useEffect(() => {
-    if (token) {
-      console.log("CLIENT: Attempting to connect with token:", token);
-      const newSocket = io(SOCKET_URL, { auth: { token } });
+    if (isAuthenticated) {
+      console.log("CLIENT: Attempting to connect with cookie auth");
+      const newSocket = io(SOCKET_URL, {
+        withCredentials: true,
+      });
       setSocket(newSocket);
 
       newSocket.on("getOnlineUsers", (users) => {
@@ -43,7 +45,7 @@ export const SocketProvider = ({ children }) => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [isAuthenticated]);
 
   return (
     <SocketContext.Provider value={{ socket, onlineUsers }}>

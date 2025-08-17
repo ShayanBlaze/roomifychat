@@ -1,4 +1,6 @@
 const jwt = require("jsonwebtoken");
+const cookie = require("cookie");
+
 const Message = require("../models/Message");
 const User = require("../models/User");
 const Conversation = require("../models/Conversation");
@@ -7,23 +9,30 @@ let onlineUsers = new Map();
 
 const initializeSocket = (io) => {
   io.use((socket, next) => {
-    const token = socket.handshake.auth.token;
-
+    const handshake = socket.request;
     console.log("SERVER: Received connection attempt.");
-    console.log("SERVER: Token received:", token);
 
-    if (!token) {
-      console.log("SERVER: Auth failed. Token not provided.");
-      return next(new Error("Authentication error: Token not provided."));
-    }
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-      if (err) {
-        console.error("SERVER: JWT verification failed!", err);
-        return next(new Error("Authentication error: Invalid token."));
+    if (handshake.headers.cookie) {
+      const cookies = cookie.parse(handshake.headers.cookie);
+      const token = cookies.token;
+
+      if (!token) {
+        console.log("SERVER: Auth failed. Token not found in cookies.");
+        return next(new Error("Authentication error: Token not found."));
       }
-      socket.user = decoded;
-      next();
-    });
+
+      jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+          console.error("SERVER: JWT verification failed!", err);
+          return next(new Error("Authentication error: Invalid token."));
+        }
+        socket.user = decoded;
+        next();
+      });
+    } else {
+      console.log("SERVER: Auth failed. No cookies provided.");
+      return next(new Error("Authentication error: No cookies."));
+    }
   });
 
   io.on("connection", async (socket) => {

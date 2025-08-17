@@ -34,6 +34,16 @@ router.post(
   loginUser
 );
 
+// @route   POST api/v1/auth/logout
+// @desc    Logout user
+// @access  Private
+router.post("/logout", (req, res) => {
+  res
+    .clearCookie("token")
+    .status(200)
+    .json({ message: "Successfully logged out" });
+});
+
 // @route   GET api/v1/auth/me
 // @desc    Get current user
 // @access  Private

@@ -13,41 +13,47 @@ export const AuthContext = createContext({
 
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
   const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem("token");
-    setToken(null);
-    setUser(null);
-    setConversations([]);
+  const logout = useCallback(async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setUser(null);
+      setConversations([]);
+      setIsAuthenticated(false);
+    }
+  }, []);
+
+  const login = useCallback(async (data) => {
+    setUser(data.user);
+    setIsAuthenticated(true);
   }, []);
 
   useEffect(() => {
     const initializeAuth = async () => {
-      if (token) {
-        try {
-          const [profileRes, convosRes] = await Promise.all([
-            api.get("/user/profile"),
-            api.get("/conversations"),
-          ]);
-          setUser(profileRes.data);
-          setConversations(convosRes.data);
-        } catch (err) {
-          console.error("Token is invalid or expired, logging out:", err);
-          logout();
-        }
+      try {
+        const [profileRes, convosRes] = await Promise.all([
+          api.get("/user/profile"),
+          api.get("/conversations"),
+        ]);
+        setUser(profileRes.data);
+        setConversations(convosRes.data);
+        setIsAuthenticated(true);
+      } catch (err) {
+        setUser(null);
+        setConversations([]);
+        setIsAuthenticated(false);
+        console.log("User not authenticated", err);
       }
       setLoading(false);
     };
 
     initializeAuth();
-  }, [token, logout]);
-
-  const login = useCallback(async (data) => {
-    localStorage.setItem("token", data.token);
-    setToken(data.token);
   }, []);
 
   const updateUser = (newUserData) => {
@@ -56,9 +62,8 @@ const AuthProvider = ({ children }) => {
 
   const providerValue = {
     user,
-    token,
     loading,
-    isAuthenticated: !!token,
+    isAuthenticated,
     conversations,
     login,
     logout,
