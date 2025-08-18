@@ -16,7 +16,6 @@ import {
 } from "react-icons/io5";
 import { formatDistanceToNowStrict } from "date-fns";
 import toast from "react-hot-toast";
-import { FiMessageSquare } from "react-icons/fi";
 
 import useAuth from "../../features/auth/hooks/useAuth";
 import ConversationList from "../UI/ConversationList";
@@ -168,16 +167,6 @@ const Header = ({
   );
 };
 
-const MobileHeader = ({ onMenuClick, title }) => (
-  <header className="md:hidden flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
-    <button onClick={onMenuClick} className="p-2 text-white">
-      <MenuIcon />
-    </button>
-    <h1 className="text-xl font-bold text-white">{title}</h1>
-    <div className="w-8"></div>
-  </header>
-);
-
 const MainLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -276,49 +265,67 @@ const MainLayout = () => {
       toast.custom(
         (t) => (
           <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            className={`max-w-md w-full bg-gray-800 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className={`relative max-w-sm w-full bg-gray-800/80 backdrop-blur-lg shadow-2xl rounded-xl overflow-hidden border border-white/10`}
             onClick={() => {
               navigate(`/chat/${conversationId}`);
               toast.dismiss(t.id);
             }}
           >
-            <div className="flex-1 w-0 p-4">
-              <div className="flex items-start">
-                <div className="flex-shrink-0 pt-0.5">
+            {/* Gradient Border Effect */}
+            <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-cyan-400 to-emerald-500" />
+
+            <div className="p-4">
+              <div className="flex items-center">
+                {/* Sender Avatar with Online Indicator */}
+                <div className="relative flex-shrink-0">
                   <img
-                    className="h-10 w-10 rounded-full"
+                    className="h-12 w-12 rounded-full object-cover border-2 border-gray-700"
                     src={sender.avatar}
                     alt={sender.name}
                   />
+                  <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-400 ring-2 ring-gray-800" />
                 </div>
-                <div className="ml-3 flex-1">
-                  <p className="text-sm font-medium text-white">
+
+                {/* Message Content */}
+                <div className="ml-4 flex-1">
+                  <p className="text-md font-bold text-white tracking-wide">
                     {sender.name}
                   </p>
                   <p className="mt-1 text-sm text-gray-400 truncate">
-                    {message.type === "image" ? "📷 Photo" : message.content}
+                    {message.type === "image" ? (
+                      <span className="flex items-center gap-2">
+                        <FiMessageSquare /> Photo
+                      </span>
+                    ) : (
+                      message.content
+                    )}
                   </p>
                 </div>
+
+                {/* Close Button */}
+                <div className="ml-4 flex-shrink-0 flex">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toast.dismiss(t.id);
+                    }}
+                    className="p-2 rounded-full text-gray-500 hover:bg-gray-700/50 hover:text-white transition-colors focus:outline-none"
+                  >
+                    <IoClose className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
-            </div>
-            <div className="flex border-l border-gray-700">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toast.dismiss(t.id);
-                }}
-                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-indigo-400 hover:text-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                Close
-              </button>
             </div>
           </motion.div>
         ),
         {
           id: `notification-${conversationId}`,
+          position: "top-center",
+          duration: 5000,
         }
       );
     };
