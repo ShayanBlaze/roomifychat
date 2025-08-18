@@ -174,18 +174,8 @@ const initializeSocket = (io) => {
     });
 
     socket.on("markConversationAsRead", async ({ conversationId }) => {
-      if (conversationId === "general") {
-        return;
-      }
-
       try {
         const userId = socket.user.id;
-        const conversation = await Conversation.findOne({
-          _id: conversationId,
-          participants: userId,
-        });
-
-        if (!conversation) return;
 
         await Message.updateMany(
           {
@@ -196,36 +186,48 @@ const initializeSocket = (io) => {
           { $set: { status: "read" } }
         );
 
-        const userUnread = conversation.unreadCounts.find(
-          (uc) => uc.userId.toString() === userId
-        );
-        if (userUnread && userUnread.count > 0) {
-          userUnread.count = 0;
-          await conversation.save();
-        }
-
-        const updatedConversation = await Conversation.findById(conversationId)
-          .populate("participants", "name avatar isOnline lastSeen")
-          .populate({
-            path: "lastMessage",
-            populate: { path: "sender", select: "name" },
+        if (conversationId !== "general") {
+          const conversation = await Conversation.findOne({
+            _id: conversationId,
+            participants: userId,
           });
 
-        if (updatedConversation) {
-          updatedConversation.participants.forEach((p) => {
-            const userSocketId = onlineUsers.get(p._id.toString());
-            if (userSocketId) {
-              io.to(userSocketId).emit(
-                "conversation_updated",
-                updatedConversation
-              );
-              io.to(conversationId).emit("messages_read", {
-                conversationId,
-                readerId: userId,
+          if (conversation) {
+            const userUnread = conversation.unreadCounts.find(
+              (uc) => uc.userId.toString() === userId
+            );
+            if (userUnread && userUnread.count > 0) {
+              userUnread.count = 0;
+              await conversation.save();
+            }
+
+            const updatedConversation = await Conversation.findById(
+              conversationId
+            )
+              .populate("participants", "name avatar isOnline lastSeen")
+              .populate({
+                path: "lastMessage",
+                populate: { path: "sender", select: "name" },
+              });
+
+            if (updatedConversation) {
+              updatedConversation.participants.forEach((p) => {
+                const userSocketId = onlineUsers.get(p._id.toString());
+                if (userSocketId) {
+                  io.to(userSocketId).emit(
+                    "conversation_updated",
+                    updatedConversation
+                  );
+                }
               });
             }
-          });
+          }
         }
+
+        io.to(conversationId).emit("messages_read", {
+          conversationId,
+          readerId: userId,
+        });
       } catch (error) {
         console.error("Error in markConversationAsRead:", error);
       }

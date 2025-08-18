@@ -1,18 +1,25 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../../services/api";
 import useAuth from "../../auth/hooks/useAuth";
 import { useSocket } from "../../auth/context/SocketProvider";
 
+const isObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
+
 export const useChat = ({ conversationId }) => {
   const { socket } = useSocket();
-  const { user, setConversations } = useAuth();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [messages, setMessages] = useState([]);
   const [typingUsers, setTypingUsers] = useState([]);
   const messagesEndRef = useRef(null);
+  const [isNewChat, setIsNewChat] = useState(false);
 
   useEffect(() => {
     if (!socket || !conversationId) return;
+
+    setIsNewChat(false);
 
     const fetchInitialMessages = async () => {
       try {
@@ -20,10 +27,17 @@ export const useChat = ({ conversationId }) => {
         const response = await api.get(`/messages/${conversationId}`);
         setMessages(Array.isArray(response.data) ? response.data : []);
 
-        socket.emit("markConversationAsRead", { conversationId });
+        if (conversationId !== "general") {
+          socket.emit("markConversationAsRead", { conversationId });
+        }
       } catch (error) {
-        console.error("Failed to fetch initial messages:", error);
-        setMessages([]);
+        if (error.response && error.response.status === 404) {
+          setIsNewChat(true);
+          setMessages([]);
+        } else {
+          console.error("Failed to fetch initial messages:", error);
+          setMessages([]);
+        }
       }
     };
 
@@ -121,8 +135,24 @@ export const useChat = ({ conversationId }) => {
     }
   }, [messages]);
 
-  const sendMessage = (messageData) => {
+  const sendMessage = async (messageData) => {
     if (socket && user) {
+      let finalConversationId = conversationId;
+
+      if (isNewChat) {
+        try {
+          const { data: newConversation } = await api.post("/conversations", {
+            userId: conversationId,
+          });
+          finalConversationId = newConversation._id;
+          setIsNewChat(false);
+          navigate(`/chat/${finalConversationId}`, { replace: true });
+        } catch (error) {
+          console.error("Failed to create conversation:", error);
+          return;
+        }
+      }
+
       const optimisticMessage = {
         _id: messageData.tempId,
         tempId: messageData.tempId,
@@ -139,7 +169,7 @@ export const useChat = ({ conversationId }) => {
         content: messageData.content,
         type: messageData.type,
         tempId: messageData.tempId,
-        conversationId: conversationId,
+        conversationId: finalConversationId,
         replyTo: messageData.replyTo ? messageData.replyTo._id : null,
       });
     }

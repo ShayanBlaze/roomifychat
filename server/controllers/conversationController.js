@@ -51,6 +51,7 @@ const getUserConversations = async (req, res) => {
   try {
     const conversations = await Conversation.find({
       participants: req.user.id,
+      lastMessage: { $ne: null },
     })
       .populate("participants", "name avatar isOnline lastSeen")
       .populate({

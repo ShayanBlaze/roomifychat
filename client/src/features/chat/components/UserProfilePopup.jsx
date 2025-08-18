@@ -5,8 +5,6 @@ import { useSocket } from "../../auth/context/SocketProvider";
 
 import { IoClose, IoSend } from "react-icons/io5";
 
-import api from "../../../services/api";
-
 const backdropVariants = {
   visible: { opacity: 1 },
   hidden: { opacity: 0 },
@@ -43,16 +41,21 @@ const UserProfilePopup = ({ user, show, onClose }) => {
   const navigate = useNavigate();
   const { onlineUsers } = useSocket();
 
-  const onClickMessage = async () => {
-    try {
-      const { data: conversation } = await api.post(`/conversations`, {
-        userId: user._id,
-      });
-      onClose();
-      navigate(`/chat/${conversation._id}`, { state: { conversation } });
-    } catch (error) {
-      console.error("Failed to start conversation:", error);
-    }
+  // const onClickMessage = async () => {
+  //   try {
+  //     const { data: conversation } = await api.post(`/conversations`, {
+  //       userId: user._id,
+  //     });
+  //     onClose();
+  //     navigate(`/chat/${conversation._id}`, { state: { conversation } });
+  //   } catch (error) {
+  //     console.error("Failed to start conversation:", error);
+  //   }
+  // };
+
+  const onClickMessage = () => {
+    onClose();
+    navigate(`/chat/${user._id}`);
   };
 
   const isOnline = user && onlineUsers.includes(user._id);

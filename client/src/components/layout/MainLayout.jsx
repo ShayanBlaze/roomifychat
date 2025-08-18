@@ -195,34 +195,60 @@ const MainLayout = () => {
       if (pathname.startsWith("/chat/") && conversationId) {
         if (conversationId === "general") {
           setHeaderDetails({ title: "# general", avatar: null });
-        } else {
-          try {
-            const { data: conversation } = await api.get(
-              `/conversations/${conversationId}`
-            );
-            const otherParticipant = conversation.participants.find(
-              (p) => p._id !== user._id
-            );
-            if (otherParticipant) {
-              const isOnline = onlineUsers.includes(otherParticipant._id);
+          return;
+        }
+
+        try {
+          const { data: conversation } = await api.get(
+            `/conversations/${conversationId}`
+          );
+          const otherParticipant = conversation.participants.find(
+            (p) => p._id !== user._id
+          );
+          if (otherParticipant) {
+            const isOnline = onlineUsers.includes(otherParticipant._id);
+            const status = isOnline
+              ? "Online"
+              : `Last seen ${formatDistanceToNowStrict(
+                  new Date(otherParticipant.lastSeen),
+                  { addSuffix: true }
+                )}`;
+            setHeaderDetails({
+              title: otherParticipant.name,
+              avatar: otherParticipant.avatar,
+              activityStatus: status,
+            });
+          }
+        } catch (error) {
+          if (error.response && error.response.status === 404) {
+            try {
+              const { data: otherUser } = await api.get(
+                `/user/${conversationId}`
+              );
+              const isOnline = onlineUsers.includes(otherUser._id);
               const status = isOnline
                 ? "Online"
-                : `Last seen ${formatDistanceToNowStrict(
-                    new Date(otherParticipant.lastSeen),
-                    {
-                      addSuffix: true,
-                    }
-                  )}`;
-
+                : otherUser.lastSeen
+                ? `Last seen ${formatDistanceToNowStrict(
+                    new Date(otherUser.lastSeen),
+                    { addSuffix: true }
+                  )}`
+                : "Offline";
               setHeaderDetails({
-                title: otherParticipant.name,
-                avatar: otherParticipant.avatar,
+                title: otherUser.name,
+                avatar: otherUser.avatar,
                 activityStatus: status,
               });
+            } catch (userError) {
+              console.error(
+                "Failed to fetch user details for new chat header",
+                userError
+              );
+              setHeaderDetails({ title: "New Chat" });
             }
-          } catch (error) {
-            setHeaderDetails({ title: "Private Chat", avatar: null });
+          } else {
             console.error("Failed to fetch header details", error);
+            setHeaderDetails({ title: "Chat" });
           }
         }
       } else if (pathname.startsWith("/profile")) {
@@ -322,9 +348,19 @@ const MainLayout = () => {
     const handleConversationUpdated = (updatedConvo) => {
       console.log("✅ Conversation updated:", updatedConvo);
       setConversations((prevConvos) => {
-        const newConvos = prevConvos.map((convo) =>
-          convo._id === updatedConvo._id ? updatedConvo : convo
+        const convoExists = prevConvos.some(
+          (convo) => convo._id === updatedConvo._id
         );
+
+        let newConvos;
+        if (convoExists) {
+          newConvos = prevConvos.map((convo) =>
+            convo._id === updatedConvo._id ? updatedConvo : convo
+          );
+        } else {
+          newConvos = [updatedConvo, ...prevConvos];
+        }
+
         return newConvos.sort(
           (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
         );
