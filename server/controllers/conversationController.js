@@ -1,5 +1,6 @@
 const Conversation = require("../models/Conversation");
 const mongoose = require("mongoose");
+const { onlineUsers } = require("../socket/socketHandler");
 
 // @desc    Start or get a one-on-one conversation
 // @route   POST /api/v1/conversations
@@ -12,24 +13,20 @@ const createOrGetConversation = async (req, res) => {
     return res.status(400).json({ message: "User ID is required." });
   }
 
-  // Convert string IDs to mongoose ObjectIDs for consistent comparison
   const participants = [
     new mongoose.Types.ObjectId(currentUserId),
     new mongoose.Types.ObjectId(otherUserId),
   ];
 
   try {
-    // Find if a conversation already exists with these two participants
     let conversation = await Conversation.findOne({
       participants: { $all: participants },
     });
 
-    // If conversation exists, return it
     if (conversation) {
       return res.status(200).json(conversation);
     }
 
-    // If not, create a new one
     const newConversation = new Conversation({
       participants: participants,
     });
@@ -100,6 +97,7 @@ const deleteConversation = async (req, res) => {
   try {
     const conversationId = req.params.id;
     const currentUserId = req.user.id;
+    const io = req.app.get("socketio");
 
     const conversation = await Conversation.findById(conversationId);
 
@@ -107,13 +105,28 @@ const deleteConversation = async (req, res) => {
       return res.status(404).json({ message: "Conversation not found." });
     }
 
-    if (!conversation.participants.includes(currentUserId)) {
+    if (
+      !conversation.participants
+        .map((id) => id.toString())
+        .includes(currentUserId)
+    ) {
       return res
         .status(403)
         .json({ message: "User not authorized to delete this conversation." });
     }
 
+    const participants = conversation.participants;
+
     await conversation.deleteOne();
+
+    participants.forEach((participantId) => {
+      const participantSocketId = onlineUsers.get(participantId.toString());
+      if (participantSocketId) {
+        io.to(participantSocketId).emit("conversation_deleted", {
+          conversationId,
+        });
+      }
+    });
 
     res.status(200).json({ message: "Conversation deleted successfully." });
   } catch (error) {

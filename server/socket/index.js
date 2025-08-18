@@ -1,5 +1,5 @@
 const { Server } = require("socket.io");
-const initializeSocketHandlers = require("./socketHandler");
+const { initializeSocket } = require("./socketHandler");
 
 const setupSocket = (server) => {
   const allowedOrigins = [process.env.CLIENT_URL, process.env.DEV_URL];
@@ -14,7 +14,7 @@ const setupSocket = (server) => {
     allowEIO3: true,
   });
 
-  initializeSocketHandlers(io);
+  initializeSocket(io);
 
   return io;
 };

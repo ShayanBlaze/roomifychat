@@ -374,14 +374,31 @@ const MainLayout = () => {
       });
     };
 
+    const handleConversationDeleted = ({ conversationId: deletedConvoId }) => {
+      console.log(
+        `EVENT RECEIVED: 'conversation_deleted' for ID: ${deletedConvoId}`
+      );
+
+      setConversations((prevConvos) =>
+        prevConvos.filter((convo) => convo._id !== deletedConvoId)
+      );
+
+      if (location.pathname.includes(`/chat/${deletedConvoId}`)) {
+        toast.error("This conversation has been deleted.");
+        navigate("/dashboard");
+      }
+    };
+
     socket.on("inAppNotification", handleInAppNotification);
     socket.on("conversation_started", handleNewConversation);
     socket.on("conversation_updated", handleConversationUpdated);
+    socket.on("conversation_deleted", handleConversationDeleted);
 
     return () => {
       socket.off("inAppNotification", handleInAppNotification);
       socket.off("conversation_started", handleNewConversation);
       socket.off("conversation_updated", handleConversationUpdated);
+      socket.off("conversation_deleted", handleConversationDeleted);
     };
   }, [socket, setConversations, location.pathname, navigate]);
 
