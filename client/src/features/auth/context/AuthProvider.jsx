@@ -7,6 +7,7 @@ export const AuthContext = createContext({
   loading: true,
   conversations: [],
   logout: () => {},
+  login: () => {},
   setConversations: () => {},
   updateUser: () => {},
 });
@@ -32,6 +33,13 @@ const AuthProvider = ({ children }) => {
   const login = useCallback(async (data) => {
     setUser(data.user);
     setIsAuthenticated(true);
+    try {
+      const convosRes = await api.get("/conversations");
+      setConversations(convosRes.data);
+    } catch (error) {
+      console.error("Failed to fetch conversations after login:", error);
+      setConversations([]);
+    }
   }, []);
 
   useEffect(() => {

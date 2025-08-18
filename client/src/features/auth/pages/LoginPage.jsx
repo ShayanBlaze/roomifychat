@@ -59,7 +59,6 @@ const Spinner = () => (
   />
 );
 
-
 const LoginPage = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);

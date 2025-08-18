@@ -59,7 +59,6 @@ const Spinner = () => (
   />
 );
 
-
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -89,7 +88,7 @@ const RegisterPage = () => {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       const data = await authService.register(formData);
-      auth.login(data);
+      await auth.login(data);
       navigate("/dashboard");
     } catch (err) {
       setError("Registration failed. This email may already be in use.");
