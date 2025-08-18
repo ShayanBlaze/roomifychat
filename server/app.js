@@ -25,6 +25,8 @@ const corsOptions = {
 };
 
 // --- Middlewares ---
+// server/app.js
+
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -34,7 +36,7 @@ app.use(
           "'self'",
           "data:",
           "res.cloudinary.com",
-          "icon-library.com",
+          "twemoji.maxcdn.com",
         ],
       },
     },
