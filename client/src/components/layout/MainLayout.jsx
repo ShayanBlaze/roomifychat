@@ -77,7 +77,7 @@ const SidebarContent = ({ onLinkClick }) => {
           to="/dashboard"
           end
           onClick={onLinkClick}
-          className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-700 transition-colors"
+          className="flex w-full md:w-72 items-center gap-4 p-3 rounded-lg hover:bg-gray-700 transition-colors"
           style={({ isActive }) => (isActive ? activeLinkStyle : undefined)}
         >
           <IoHomeOutline className="w-6 h-6" />
@@ -86,7 +86,7 @@ const SidebarContent = ({ onLinkClick }) => {
         <NavLink
           to="/chat/general"
           onClick={onLinkClick}
-          className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-700 transition-colors"
+          className="flex w-full items-center gap-4 p-3 rounded-lg hover:bg-gray-700 transition-colors"
           style={({ isActive }) => (isActive ? activeLinkStyle : undefined)}
         >
           <IoChatbubblesOutline className="w-6 h-6" />
@@ -432,7 +432,7 @@ const MainLayout = () => {
         )}
       </AnimatePresence>
 
-      <main className="flex-grow h-full flex flex-col overflow-hidden">
+      <main className="flex-grow h-full flex flex-col overflow-hidden min-w-0">
         <Header
           onMenuClick={() => setIsMobileMenuOpen(true)}
           title={headerDetails.title}
