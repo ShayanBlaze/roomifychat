@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNowStrict } from "date-fns";
-import { useSocket } from "../../auth/context/SocketProvider";
-
 import { IoClose, IoSend } from "react-icons/io5";
+
+import { useSocket } from "../../auth/context/SocketProvider";
+import api from "../../../services/api";
 
 const backdropVariants = {
   visible: { opacity: 1 },
@@ -41,21 +42,17 @@ const UserProfilePopup = ({ user, show, onClose }) => {
   const navigate = useNavigate();
   const { onlineUsers } = useSocket();
 
-  // const onClickMessage = async () => {
-  //   try {
-  //     const { data: conversation } = await api.post(`/conversations`, {
-  //       userId: user._id,
-  //     });
-  //     onClose();
-  //     navigate(`/chat/${conversation._id}`, { state: { conversation } });
-  //   } catch (error) {
-  //     console.error("Failed to start conversation:", error);
-  //   }
-  // };
-
-  const onClickMessage = () => {
-    onClose();
-    navigate(`/chat/${user._id}`);
+  const onClickMessage = async () => {
+    if (!user) return;
+    try {
+      const { data: conversation } = await api.post(`/conversations`, {
+        userId: user._id,
+      });
+      onClose();
+      navigate(`/chat/${conversation._id}`);
+    } catch (error) {
+      console.error("Failed to start or find conversation:", error);
+    }
   };
 
   const isOnline = user && onlineUsers.includes(user._id);

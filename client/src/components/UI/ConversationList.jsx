@@ -14,8 +14,9 @@ const isPersian = (text) => {
   return persianRegex.test(text);
 };
 
-const ConversationList = ({ onLinkClick, isCollapsed }) => {
-  const { user: currentUser, conversations, setConversations } = useAuth();
+const ConversationList = ({ onLinkClick, isCollapsed, conversations }) => {
+  const { user: currentUser, setConversations: setGlobalConversations } =
+    useAuth();
   const { socket } = useSocket();
   const navigate = useNavigate();
 
@@ -55,12 +56,10 @@ const ConversationList = ({ onLinkClick, isCollapsed }) => {
     e.preventDefault();
     e.stopPropagation();
     setOpenMenuId(null);
-    // Note: window.confirm might not work in all environments.
-    // Consider a custom modal for a better user experience.
     if (confirm("Are you sure you want to delete this conversation?")) {
       try {
         await api.delete(`/conversations/${conversationId}`);
-        setConversations((prev) =>
+        setGlobalConversations((prev) =>
           prev.filter((convo) => convo._id !== conversationId)
         );
         navigate("/dashboard");
@@ -115,10 +114,7 @@ const ConversationList = ({ onLinkClick, isCollapsed }) => {
               to={`/chat/${convo._id}`}
               state={{ conversation: convo }}
               className={({ isActive }) => getNavLinkClassName(isActive)}
-              onClick={() => {
-                setOpenMenuId(null);
-                if (onLinkClick) onLinkClick();
-              }}
+              onClick={onLinkClick}
             >
               <div className="relative shrink-0">
                 <img
