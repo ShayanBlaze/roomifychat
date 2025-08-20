@@ -1,13 +1,33 @@
-<div align="center">  
-<img src="https://raw.githubusercontent.com/shayanblaze/roomifychat/main/client/public/hero-image.png" alt="RoomifyChat Logo" width="200" />  
-<h1>RoomifyChat 💬</h1>  
-<p><strong>A modern, real-time chat application built with the MERN stack and Socket.IO.</strong></p>  
-<p>Seamless Conversations, Perfectly Connected.</p>  
+<div align="center">
+  <img src="https://raw.githubusercontent.com/shayanblaze/roomifychat/main/client/public/hero-image.png" alt="RoomifyChat Logo" width="200" />
+  <h1>RoomifyChat 💬</h1>
+  <p><strong>A modern, real-time chat application built with the MERN stack and Socket.IO.</strong></p>
+  <p>Seamless Conversations, Perfectly Connected.</p>
 </div>
+
+---
+
+### **About The Project**
 
 **RoomifyChat** is a feature-rich, real-time chat application designed to provide a seamless, secure, and engaging communication experience. Built with a robust MERN stack (MongoDB, Express.js, React, Node.js) and integrated with Socket.IO, this project offers a powerful platform for both private and group conversations.
 
-## **✨ Key Features**
+---
+
+### **Built With**
+
+<p align="center">
+  <img src="https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB" alt="Express.js" />
+  <img src="https://img.shields.io/badge/MongoDB-%234ea94b.svg?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
+  <img src="https://img.shields.io/badge/Socket.io-black?style=for-the-badge&logo=socket.io&logoColor=white" alt="Socket.io" />
+  <img src="https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="TailwindCSS" />
+</p>
+
+---
+
+### **✨ Key Features**
 
 - ⚡️ **Real-Time Messaging:** Instant message delivery using WebSockets for a fluid user experience.
 - 🔐 **User Authentication:** Secure user registration, login, and profile management with JWT-based authentication.
@@ -24,11 +44,13 @@
 - 📱 **Modern & Responsive UI:** A sleek, user-friendly interface built with React and Tailwind CSS, fully responsive across all devices.
 - 🛡️ **Security:** Implemented with secure practices, including password hashing (bcrypt), protected API routes, and secure cookie handling.
 
-## **🛠️ Tech Stack**
+---
+
+### **🛠️ Tech Stack**
 
 The project is built as a monorepo with a separate client and server.
 
-### **🖥️ Frontend (Client-Side)**
+#### **🖥️ Frontend (Client-Side)**
 
 | Technology           | Description                                                         |
 | :------------------- | :------------------------------------------------------------------ |
@@ -41,7 +63,7 @@ The project is built as a monorepo with a separate client and server.
 | **Framer Motion**    | For creating fluid and complex animations.                          |
 | **React Hot Toast**  | For adding beautiful, non-intrusive notifications.                  |
 
-### **⚙️ Backend (Server-Side)**
+#### **⚙️ Backend (Server-Side)**
 
 | Technology     | Description                                                        |
 | :------------- | :----------------------------------------------------------------- |
@@ -53,77 +75,97 @@ The project is built as a monorepo with a separate client and server.
 | **JWT**        | For secure user authentication and authorization.                  |
 | **Bcrypt.js**  | A library for hashing user passwords.                              |
 | **Cloudinary** | A cloud service for managing image uploads and storage.            |
-| **Multer**     | A middleware for handling multipart/form-data for file uploads.    |
+| **Multer**     | A middleware for handling `multipart/form-data` for file uploads.  |
 
-## **🚀 Getting Started**
+---
+
+### **🚀 Getting Started**
 
 Follow these instructions to set up and run the project on your local machine.
 
-### **Prerequisites**
+#### **Prerequisites**
 
 - **Node.js**: Version 18.x or higher.
 - **MongoDB**: An active MongoDB instance (local or cloud via MongoDB Atlas).
 - **Cloudinary Account**: Required for image upload functionality.
 
-### **1\. Clone the Repository**
+#### **1. Clone the Repository**
 
 First, clone the project from GitHub:
 
-git clone https://github.com/shayanblaze/roomifychat.git  
+```sh
+git clone [https://github.com/shayanblaze/roomifychat.git](https://github.com/shayanblaze/roomifychat.git)
 cd roomifychat
+```
 
-### **2\. Install Dependencies**
+#### **2. Install Dependencies**
 
-This project is a monorepo. To install dependencies for both the client and server, run the following command from the root directory:
+This project is a monorepo. To install dependencies for both the client and server, run the following command from the **root directory**:
 
-npm install \--prefix server && npm install \--prefix client
+```sh
+npm install --prefix server && npm install --prefix client
+```
 
-### **3\. Configure Environment Variables**
+#### **3. Configure Environment Variables**
 
-Create a .env file in both the /server and /client directories by copying the respective .env.example files.
+Create a `.env` file in both the `/server` and `/client` directories by copying the respective `.env.example` files.
 
-#### **🔹 Server Configuration (/server/.env)**
+> **Server Configuration (`/server/.env`)**
 
-\# Client URL for CORS  
-CLIENT_URL=http://localhost:5173  
-DEV_URL=http://127.0.0.1:5173
+```bash
+# Client URL for CORS
+CLIENT_URL=http://localhost:5173
+DEV_URL=[http://127.0.0.1:5173](http://127.0.0.1:5173)
 
-\# MongoDB Connection URI  
+# MongoDB Connection URI
 MONGO_URI=your_mongodb_connection_string
 
-\# Secret key for JWT generation  
+# Secret key for JWT generation
 JWT_SECRET=your_super_secret_jwt_key
 
-\# Port for the server  
+# Port for the server
 PORT=3000
 
-\# Cloudinary Account Credentials  
-CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name  
-CLOUDINARY_API_KEY=your_cloudinary_api_key  
+# Cloudinary Account Credentials
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+```
 
-#### **🔹 Client Configuration (/client/.env)**
+> **Client Configuration (`/client/.env`)**
 
-\# Base URL for the backend API  
+```bash
+# Base URL for the backend API
 VITE_API_BASE_URL=http://localhost:3000
+```
 
-### **4\. Run the Application**
+#### **4. Run the Application**
 
 To run both the client and server concurrently in development mode, use the following command from the **root directory**:
 
+```sh
 npm run dev
+```
 
 This will start:
 
-- The backend server on http://localhost:3000
-- The React client on http://localhost:5173
+- The backend server on `http://localhost:3000`
+- The React client on `http://localhost:5173`
 
-You can now open your browser and navigate to http://localhost:5173 to use the application.
+You can now open your browser and navigate to `http://localhost:5173` to use the application.
 
-## **📜 Available Scripts**
+---
 
-The following scripts are available in the root package.json:
+### **📜 Available Scripts**
 
-- **npm run dev**: Starts both the client and server in development mode.
-- **npm run start**: Starts the server in production mode (requires a prior build).
-- **npm run build**: Builds the client application for production.
+The following scripts are available in the root `package.json`:
+
+- `npm run dev`: Starts both the client and server in development mode.
+- `npm run start`: Starts the server in production mode (requires a prior build).
+- `npm run build`: Builds the client application for production.
+
+---
+
+### **📝 License**
+
+Distributed under the MIT License. See `LICENSE` for more information.
