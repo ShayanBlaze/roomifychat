@@ -13,6 +13,8 @@ import {
   IoHomeOutline,
   IoLogOutOutline,
   IoMenuOutline,
+  IoChevronBack,
+  IoChevronForward,
 } from "react-icons/io5";
 import { formatDistanceToNowStrict } from "date-fns";
 import toast from "react-hot-toast";
@@ -22,7 +24,7 @@ import ConversationList from "../UI/ConversationList";
 import { useSocket } from "../../features/auth/context/SocketProvider";
 import api from "../../services/api";
 
-const SidebarContent = ({ onLinkClick }) => {
+const SidebarContent = ({ onLinkClick, isCollapsed }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -59,48 +61,60 @@ const SidebarContent = ({ onLinkClick }) => {
       <NavLink
         to="/profile"
         onClick={onLinkClick}
-        className="flex items-center gap-4 mb-8 p-2 rounded-lg hover:bg-gray-700 transition-colors"
+        className={`flex items-center gap-4 mb-8 p-2 rounded-lg hover:bg-gray-700 transition-colors ${
+          isCollapsed ? "justify-center" : ""
+        }`}
         style={({ isActive }) => (isActive ? activeLinkStyle : undefined)}
       >
         <img
           src={user.avatar || `https://i.pravatar.cc/150?u=${user.email}`}
           alt={user.name}
-          className="w-12 h-12 rounded-full border-2 border-emerald-400"
+          className="w-12 h-12 rounded-full border-2 border-emerald-400 shrink-0"
         />
-        <div>
-          <h2 className="font-bold text-lg text-white truncate">{user.name}</h2>
-          <p className="text-sm text-gray-400">View Profile</p>
-        </div>
+        {!isCollapsed && (
+          <div className="overflow-hidden">
+            <h2 className="font-bold text-lg text-white truncate">
+              {user.name}
+            </h2>
+            <p className="text-sm text-gray-400">View Profile</p>
+          </div>
+        )}
       </NavLink>
       <nav className="flex flex-col gap-3 flex-grow">
         <NavLink
           to="/dashboard"
           end
           onClick={onLinkClick}
-          className="flex w-full md:w-72 items-center gap-4 p-3 rounded-lg hover:bg-gray-700 transition-colors"
+          className={`flex items-center gap-4 p-3 rounded-lg hover:bg-gray-700 transition-colors ${
+            isCollapsed ? "justify-center" : ""
+          }`}
           style={({ isActive }) => (isActive ? activeLinkStyle : undefined)}
         >
-          <IoHomeOutline className="w-6 h-6" />
-          <span className="font-semibold">Dashboard</span>
+          <IoHomeOutline className="w-6 h-6 shrink-0" />
+          {!isCollapsed && <span className="font-semibold">Dashboard</span>}
         </NavLink>
         <NavLink
           to="/chat/general"
           onClick={onLinkClick}
-          className="flex w-full items-center gap-4 p-3 rounded-lg hover:bg-gray-700 transition-colors"
+          className={`flex items-center gap-4 p-3 rounded-lg hover:bg-gray-700 transition-colors ${
+            isCollapsed ? "justify-center" : ""
+          }`}
           style={({ isActive }) => (isActive ? activeLinkStyle : undefined)}
         >
-          <IoChatbubblesOutline className="w-6 h-6" />
-          <span className="font-semibold">Chat</span>
+          <IoChatbubblesOutline className="w-6 h-6 shrink-0" />
+          {!isCollapsed && <span className="font-semibold">Chat</span>}
         </NavLink>
-        <ConversationList onLinkClick={onLinkClick} />
+        <ConversationList onLinkClick={onLinkClick} isCollapsed={isCollapsed} />
       </nav>
       <div className="mt-auto">
         <button
           onClick={handleLogout}
-          className="flex items-center w-full gap-4 p-3 rounded-lg text-gray-400 hover:bg-red-800/50 hover:text-white transition-colors cursor-pointer"
+          className={`flex items-center w-full gap-4 p-3 rounded-lg text-gray-400 hover:bg-red-800/50 hover:text-white transition-colors cursor-pointer ${
+            isCollapsed ? "justify-center" : ""
+          }`}
         >
-          <IoLogOutOutline className="w-6 h-6" />
-          <span className="font-semibold">Logout</span>
+          <IoLogOutOutline className="w-6 h-6 shrink-0" />
+          {!isCollapsed && <span className="font-semibold">Logout</span>}
         </button>
       </div>
     </div>
@@ -169,6 +183,7 @@ const Header = ({
 
 const MainLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const location = useLocation();
   const { setConversations, user } = useAuth();
   const { conversationId } = useParams();
@@ -405,8 +420,22 @@ const MainLayout = () => {
   return (
     <div className="flex h-screen w-full bg-gray-900 text-gray-300">
       {/* Sidebar: Always visible on desktop */}
-      <aside className="hidden md:flex flex-col w-80 h-full bg-gray-800/50 border-r border-gray-700 p-4">
-        <SidebarContent />
+      <aside
+        className={`hidden md:flex flex-col h-full bg-gray-800/50 border-r border-gray-700 p-4 relative transition-all duration-300 ease-in-out ${
+          isSidebarCollapsed ? "w-24" : "w-80"
+        }`}
+      >
+        <button
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          className="absolute -right-3 top-1/2 -translate-y-1/2 bg-gray-700 hover:bg-gray-600 text-white p-1 rounded-full z-10"
+        >
+          {isSidebarCollapsed ? (
+            <IoChevronForward className="w-4 h-4" />
+          ) : (
+            <IoChevronBack className="w-4 h-4" />
+          )}
+        </button>
+        <SidebarContent isCollapsed={isSidebarCollapsed} />
       </aside>
 
       <AnimatePresence>
