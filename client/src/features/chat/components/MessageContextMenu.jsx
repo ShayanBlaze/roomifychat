@@ -50,8 +50,8 @@ const MessageContextMenu = ({
     <div className="fixed inset-0 z-40" onClick={onClose}>
       <div
         ref={menuRef}
-        className="fixed z-50 bg-gray-800 border border-gray-700 rounded-md shadow-lg w-40"
-        style={menuStyle} 
+        className="fixed z-50 bg-gray-800 border border-gray-700 rounded-md shadow-lg w-40 no-select"
+        style={menuStyle}
         onClick={(e) => e.stopPropagation()}
       >
         <ul className="py-1">

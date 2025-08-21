@@ -153,10 +153,14 @@ const ChatPage = () => {
 
   const handleOpenMenu = useCallback((event, message) => {
     event.preventDefault();
+    event.stopPropagation();
+
+    const x = event.touches?.[0]?.pageX || event.pageX;
+    const y = event.touches?.[0]?.pageY || event.pageY;
     setMenuState({
       visible: true,
-      x: event.pageX,
-      y: event.pageY,
+      x: x,
+      y: y,
       message: message,
     });
   }, []);

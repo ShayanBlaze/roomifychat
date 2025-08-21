@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import twemoji from "twemoji";
 import DOMPurify from "dompurify";
 import { FiCornerUpLeft, FiEdit2, FiImage } from "react-icons/fi";
+import { useRef } from "react";
 
 const formatTime = (dateString) => {
   if (!dateString) return "";
@@ -80,6 +81,33 @@ const MessageItem = ({
 
   const senderAvatar = msg.sender?.avatar || defaultAvatar;
 
+  const pressTimer = useRef(null);
+  const touchStartPos = useRef({ x: 0, y: 0 });
+
+  const handleTouchStart = (e) => {
+    touchStartPos.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+    pressTimer.current = setTimeout(() => {
+      onOpenMenu(e, msg);
+    }, 500);
+  };
+
+  const handleTouchMove = (e) => {
+    const moveX = Math.abs(e.touches[0].clientX - touchStartPos.current.x);
+    const moveY = Math.abs(e.touches[0].clientY - touchStartPos.current.y);
+
+    // If finger moves more than 10px in any direction, it's a scroll, not a long press
+    if (moveX > 10 || moveY > 10) {
+      clearTimeout(pressTimer.current);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    clearTimeout(pressTimer.current);
+  };
+
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -94,10 +122,17 @@ const MessageItem = ({
     },
   };
 
+  const commonBubbleProps = {
+    onContextMenu: (e) => onOpenMenu(e, msg),
+    onTouchStart: handleTouchStart,
+    onTouchMove: handleTouchMove,
+    onTouchEnd: handleTouchEnd,
+  };
+
   const SentMessageBubble = () => (
     <div
-      onContextMenu={(e) => onOpenMenu(e, msg)}
-      className={`max-w-[80%] sm:max-w-md md:max-w-lg rounded-3xl rounded-br-lg shadow-lg relative cursor-pointer
+      {...commonBubbleProps}
+      className={`max-w-[80%] sm:max-w-md md:max-w-lg rounded-3xl rounded-br-lg shadow-lg relative cursor-pointer no-select
         ${
           msg.type === "image"
             ? "p-1.5 bg-gradient-to-br from-teal-500 to-cyan-500"
@@ -147,8 +182,8 @@ const MessageItem = ({
 
   const ReceivedMessageBubble = () => (
     <div
-      onContextMenu={(e) => onOpenMenu(e, msg)}
-      className={`max-w-[80%] sm:max-w-md md:max-w-lg rounded-3xl rounded-bl-lg shadow-lg relative cursor-pointer
+      {...commonBubbleProps}
+      className={`max-w-[80%] sm:max-w-md md:max-w-lg rounded-3xl rounded-bl-lg shadow-lg relative cursor-pointer no-select
         ${
           msg.type === "image"
             ? "p-0 bg-transparent"
